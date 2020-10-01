@@ -25,6 +25,7 @@ var (
 		Verbose:            uint(0),
 		NetworkInterface:   "",
 		Ja3BlackListFile:   "",
+		GeoIpDb:            "",
 	}
 
 	timeFrame = "1m"
@@ -55,6 +56,7 @@ func init() {
 	flag.StringVar(&config.NetworkInterface, "network", "", "name of your network interface")
 	flag.BoolVar(&showInterfaceNames, "interfaces", false, "show the list of all your network interfaces")
 	flag.StringVar(&config.Ja3BlackListFile, "ja3", "", "file path of malicious ja3 fingerprints")
+	flag.StringVar(&config.GeoIpDb, "geoip", "", "file path of geoip db")
 }
 
 func flagConfig() {

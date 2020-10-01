@@ -8,4 +8,5 @@ require (
 	github.com/dreadl0ck/ja3 v1.0.0
 	github.com/google/gopacket v1.1.18
 	github.com/influxdata/influxdb-client-go v1.4.0
+	github.com/oschwald/geoip2-golang v1.4.0
 )

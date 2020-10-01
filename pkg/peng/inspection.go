@@ -7,15 +7,38 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	_ "github.com/google/gopacket/layers" //Used to init internal struct
+	"github.com/oschwald/geoip2-golang"
 	"log"
 	"net"
 	"time"
 )
 
 var myIPs = make([]net.IP, 0, 2)
+var topCountryVisit = make(map[string]int)
 
 func (p *Peng) inspect(packet gopacket.Packet) {
 	var ipv4Layer gopacket.Layer //skip inspection if i can't obtain ip layer
+
+	if packet.ApplicationLayer() != nil {
+		var tls layers.TLS
+		var decoded []gopacket.LayerType
+		parser := gopacket.NewDecodingLayerParser(layers.LayerTypeTLS, &tls)
+		err := parser.DecodeLayers(packet.ApplicationLayer().LayerContents(), &decoded)
+		if err != nil {
+			return
+		}
+
+		for _, layerType := range decoded {
+			switch layerType {
+			case layers.LayerTypeTLS:
+				for _, v := range tls.Alert {
+					//TODO implement TLS cipher check
+					fmt.Printf("TLS: %s %s %s\n", v.Version.String(), v.Description.String(), v.Level.String())
+				}
+			}
+		}
+	}
+
 	if ipv4Layer = packet.Layer(layers.LayerTypeIPv4); ipv4Layer == nil {
 		return
 	}
@@ -34,6 +57,7 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 
 	if tcpLayer := packet.Layer(layers.LayerTypeTCP); tcpLayer != nil {
 		tcp, _ := tcpLayer.(*layers.TCP)
+
 		if tcp.SYN && !tcp.ACK {
 			p.PortScanningHandler(uint16(tcp.DstPort), packetDestToMyPc)
 
@@ -46,6 +70,7 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 			}
 		}
 	}
+
 	/*
 		if udpLayer := packet.Layer(layers.LayerTypeUDP); udpLayer != nil {
 			udp, _ := udpLayer.(*layers.UDP)
@@ -56,6 +81,13 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 
 			if
 		}*/
+
+	externalIp := ipv4.DstIP.String()
+	if packetDestToMyPc {
+		externalIp = ipv4.SrcIP.String()
+	}
+
+	GeoIpSearch(externalIp, p.Config.GeoIpDb)
 
 	if len(ja3BlackList) != 0 {
 		ja3md5 := ja3.DigestHexPacket(packet) //TODO replace this in the previous tcp handler
@@ -70,19 +102,33 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 			}
 		}
 
-		maliciousIp := ipv4.DstIP.String()
-		if packetDestToMyPc {
-			maliciousIp = ipv4.SrcIP.String()
-		}
-
 		if name, ok := ja3BlackList[ja3md5]; ok {
-			fmt.Printf("[%s] %s appears in the blocked Ja3 list as %s!\n", maliciousIp, ja3md5, name)
+			fmt.Printf("[%s] %s appears in the blocked Ja3 list as %s!\n", externalIp, ja3md5, name)
 		}
 		if name, ok := ja3BlackList[ja3smd5]; ok {
-			fmt.Printf("[%s] %s appears in the blocked Ja3 list as %s!\n", maliciousIp, ja3smd5, name)
+			fmt.Printf("[%s] %s appears in the blocked Ja3 list as %s!\n", externalIp, ja3smd5, name)
 		}
 	}
 
+}
+
+func GeoIpSearch(ip, dbPath string) {
+	db, err := geoip2.Open(dbPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	parsedIp := net.ParseIP(ip)
+	record, err := db.Country(parsedIp)
+	if err != nil {
+		log.Println(err)
+	}
+
+	if record.Country.IsoCode != "" {
+		//fmt.Printf("[%s] nation: %s \n", ip, record.Country.IsoCode)
+		topCountryVisit[record.Country.IsoCode]++
+	}
 }
 
 func (p *Peng) PortScanningHandler(port uint16, incomingPck bool) {

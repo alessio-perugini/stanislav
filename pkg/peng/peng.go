@@ -33,6 +33,7 @@ type Config struct {
 	Verbose            uint
 	TimeFrame          time.Duration
 	Ja3BlackListFile   string
+	GeoIpDb            string
 }
 
 var ja3BlackList map[string]string
@@ -80,6 +81,10 @@ func (p *Peng) Start() {
 	signal.Notify(sig, os.Interrupt)
 	<-sig
 	log.Println("Quitting Peng, bye!")
+
+	for k, v := range topCountryVisit {
+		fmt.Printf("[%s] %d visit.\n", k, v)
+	}
 }
 
 func (p *Peng) LoadBlackListJa3InMemory() {
