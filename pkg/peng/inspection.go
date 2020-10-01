@@ -56,17 +56,33 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 
 			if
 		}*/
-	//TODO add blacklist check
-	ja3string := ja3.DigestHexPacket(packet)
-	ja3sstring := ja3.DigestHexPacketJa3s(packet)
-	if p.Config.Verbose == 2 {
-		if ja3string != "" {
-			fmt.Printf("J1: %s\n", ja3string)
+
+	if len(ja3BlackList) != 0 {
+		ja3md5 := ja3.DigestHexPacket(packet) //TODO replace this in the previous tcp handler
+		ja3smd5 := ja3.DigestHexPacketJa3s(packet)
+
+		if p.Config.Verbose == 2 {
+			if ja3md5 != "" {
+				fmt.Printf("J:  %s\n", ja3md5)
+			}
+			if ja3smd5 != "" {
+				fmt.Printf("JS: %s\n", ja3smd5)
+			}
 		}
-		if ja3sstring != "" {
-			fmt.Printf("J2: %s\n", ja3sstring)
+
+		maliciousIp := ipv4.DstIP.String()
+		if packetDestToMyPc {
+			maliciousIp = ipv4.SrcIP.String()
+		}
+
+		if name, ok := ja3BlackList[ja3md5]; ok {
+			fmt.Printf("[%s] %s appears in the blocked Ja3 list as %s!\n", maliciousIp, ja3md5, name)
+		}
+		if name, ok := ja3BlackList[ja3smd5]; ok {
+			fmt.Printf("[%s] %s appears in the blocked Ja3 list as %s!\n", maliciousIp, ja3smd5, name)
 		}
 	}
+
 }
 
 func (p *Peng) PortScanningHandler(port uint16, incomingPck bool) {

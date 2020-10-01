@@ -24,7 +24,9 @@ var (
 		UseInflux:          false,
 		Verbose:            uint(0),
 		NetworkInterface:   "",
+		Ja3BlackListFile:   "",
 	}
+
 	timeFrame = "1m"
 
 	showInterfaceNames bool
@@ -52,6 +54,7 @@ func init() {
 	flag.UintVar(&config.Verbose, "verbose", 1, "set verbose level (1-3)")
 	flag.StringVar(&config.NetworkInterface, "network", "", "name of your network interface")
 	flag.BoolVar(&showInterfaceNames, "interfaces", false, "show the list of all your network interfaces")
+	flag.StringVar(&config.Ja3BlackListFile, "ja3", "", "file path of malicious ja3 fingerprints")
 }
 
 func flagConfig() {
@@ -118,8 +121,19 @@ func flagConfig() {
 	fmt.Printf("%s\n", appString)
 }
 
+//var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+
 func main() {
 	flagConfig()
+	/*
+		if *cpuprofile != "" {
+			f, err := os.Create(*cpuprofile)
+			if err != nil {
+				log.Fatal(err)
+			}
+			pprof.StartCPUProfile(f)
+			defer pprof.StopCPUProfile()
+		}*/
 
 	peng := p.New(&config)
 	peng.Start()

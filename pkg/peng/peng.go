@@ -1,6 +1,7 @@
 package peng
 
 import (
+	"encoding/csv"
 	"fmt"
 	"github.com/alessio-perugini/peng/pkg/portbitmap"
 	"github.com/google/gopacket"
@@ -31,7 +32,10 @@ type Config struct {
 	InfluxAuthToken    string
 	Verbose            uint
 	TimeFrame          time.Duration
+	Ja3BlackListFile   string
 }
+
+var ja3BlackList map[string]string
 
 func New(cfg *Config) *Peng {
 	cfg.NumberOfBits = cfg.SizeBitmap / cfg.NumberOfBin
@@ -51,6 +55,7 @@ func New(cfg *Config) *Peng {
 
 func (p *Peng) Start() {
 	getMyIp()
+	p.LoadBlackListJa3InMemory()
 
 	pHandle, err := pcap.OpenLive(
 		p.Config.NetworkInterface,
@@ -75,6 +80,32 @@ func (p *Peng) Start() {
 	signal.Notify(sig, os.Interrupt)
 	<-sig
 	log.Println("Quitting Peng, bye!")
+}
+
+func (p *Peng) LoadBlackListJa3InMemory() {
+	file, err := os.OpenFile(p.Config.Ja3BlackListFile, os.O_RDONLY, 0777)
+	defer file.Close()
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	r := csv.NewReader(file)
+	ja3BlackList = make(map[string]string)
+	r.Comment = '#'
+	for {
+		csvField, err := r.Read()
+		if err != nil {
+			break
+		}
+
+		//Parse csv fields
+		md5h := csvField[0] //md5 hash
+		name := csvField[3] //malware name
+
+		ja3BlackList[md5h] = name
+	}
 }
 
 func (p *Peng) PrintAllInfo() {
