@@ -1,0 +1,75 @@
+# github.com/VerizonDigital/vflow v0.8.0
+## explicit
+github.com/VerizonDigital/vflow/ipfix
+github.com/VerizonDigital/vflow/netflow/v9
+github.com/VerizonDigital/vflow/reader
+# github.com/deepmap/oapi-codegen v1.3.6
+github.com/deepmap/oapi-codegen/pkg/runtime
+github.com/deepmap/oapi-codegen/pkg/types
+# github.com/dreadl0ck/ja3 v1.0.0
+## explicit
+github.com/dreadl0ck/ja3
+# github.com/dreadl0ck/tlsx v0.0.0-20200303221230-8cb859306e07
+github.com/dreadl0ck/tlsx
+# github.com/google/gopacket v1.1.18
+## explicit
+github.com/google/gopacket
+github.com/google/gopacket/layers
+github.com/google/gopacket/pcap
+github.com/google/gopacket/pcapgo
+# github.com/influxdata/influxdb-client-go v1.4.0
+## explicit
+github.com/influxdata/influxdb-client-go
+github.com/influxdata/influxdb-client-go/api
+github.com/influxdata/influxdb-client-go/api/http
+github.com/influxdata/influxdb-client-go/api/query
+github.com/influxdata/influxdb-client-go/api/write
+github.com/influxdata/influxdb-client-go/domain
+github.com/influxdata/influxdb-client-go/internal/gzip
+github.com/influxdata/influxdb-client-go/internal/http
+github.com/influxdata/influxdb-client-go/internal/log
+github.com/influxdata/influxdb-client-go/internal/write
+# github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839
+github.com/influxdata/line-protocol
+# github.com/labstack/echo/v4 v4.1.11
+github.com/labstack/echo/v4
+# github.com/labstack/gommon v0.3.0
+github.com/labstack/gommon/color
+github.com/labstack/gommon/log
+# github.com/mattn/go-colorable v0.1.4
+github.com/mattn/go-colorable
+# github.com/mattn/go-isatty v0.0.10
+github.com/mattn/go-isatty
+# github.com/oschwald/geoip2-golang v1.4.0
+## explicit
+github.com/oschwald/geoip2-golang
+# github.com/oschwald/maxminddb-golang v1.6.0
+github.com/oschwald/maxminddb-golang
+# github.com/pkg/errors v0.9.1
+github.com/pkg/errors
+# github.com/valyala/bytebufferpool v1.0.0
+github.com/valyala/bytebufferpool
+# github.com/valyala/fasttemplate v1.1.0
+github.com/valyala/fasttemplate
+# golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
+golang.org/x/crypto/acme
+golang.org/x/crypto/acme/autocert
+golang.org/x/crypto/cryptobyte
+golang.org/x/crypto/cryptobyte/asn1
+# golang.org/x/net v0.0.0-20200513185701-a91f0712d120
+golang.org/x/net/bpf
+golang.org/x/net/idna
+golang.org/x/net/internal/iana
+golang.org/x/net/internal/socket
+golang.org/x/net/ipv4
+golang.org/x/net/ipv6
+# golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+# golang.org/x/text v0.3.2
+golang.org/x/text/secure/bidirule
+golang.org/x/text/transform
+golang.org/x/text/unicode/bidi
+golang.org/x/text/unicode/norm
+# gopkg.in/yaml.v2 v2.3.0
+gopkg.in/yaml.v2
