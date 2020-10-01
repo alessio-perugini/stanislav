@@ -23,9 +23,8 @@ func LiveMode() {
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
 	logger = opts.Logger
 
-	//netflow5 := NewNetflowV5()
 	netflow9 := NewNetflowV9()
-	protos := []proto{ /*netflow5,*/ netflow9}
+	protos := []proto{netflow9}
 
 	for _, p := range protos {
 		wg.Add(1)
