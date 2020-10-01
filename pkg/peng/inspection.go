@@ -2,7 +2,6 @@ package peng
 
 import (
 	"fmt"
-	"github.com/alessio-perugini/peng/pkg/portbitmap"
 	"github.com/dreadl0ck/ja3"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -10,6 +9,7 @@ import (
 	"github.com/oschwald/geoip2-golang"
 	"log"
 	"net"
+	"stanislav/pkg/portbitmap"
 	"time"
 )
 
@@ -18,27 +18,6 @@ var topCountryVisit = make(map[string]int)
 
 func (p *Peng) inspect(packet gopacket.Packet) {
 	var ipv4Layer gopacket.Layer //skip inspection if i can't obtain ip layer
-
-	if packet.ApplicationLayer() != nil {
-		var tls layers.TLS
-		var decoded []gopacket.LayerType
-		parser := gopacket.NewDecodingLayerParser(layers.LayerTypeTLS, &tls)
-		err := parser.DecodeLayers(packet.ApplicationLayer().LayerContents(), &decoded)
-		if err != nil {
-			return
-		}
-
-		for _, layerType := range decoded {
-			switch layerType {
-			case layers.LayerTypeTLS:
-				for _, v := range tls.Alert {
-					//TODO implement TLS cipher check
-					fmt.Printf("TLS: %s %s %s\n", v.Version.String(), v.Description.String(), v.Level.String())
-				}
-			}
-		}
-	}
-
 	if ipv4Layer = packet.Layer(layers.LayerTypeIPv4); ipv4Layer == nil {
 		return
 	}
@@ -90,6 +69,7 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 	GeoIpSearch(externalIp, p.Config.GeoIpDb)
 
 	if len(ja3BlackList) != 0 {
+		ja3.Security = 0
 		ja3md5 := ja3.DigestHexPacket(packet) //TODO replace this in the previous tcp handler
 		ja3smd5 := ja3.DigestHexPacketJa3s(packet)
 
@@ -108,8 +88,36 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 		if name, ok := ja3BlackList[ja3smd5]; ok {
 			fmt.Printf("[%s] %s appears in the blocked Ja3 list as %s!\n", externalIp, ja3smd5, name)
 		}
-	}
 
+		//TODO add TLS version check
+		//TLS cipher security check
+		switch ja3.Security {
+		case 1:
+			fmt.Println("Weak tls cipher")
+		case 2:
+			fmt.Println("Insecure tls cipher")
+		}
+	}
+	//				switch hello.CipherSuite {
+	//				case 49169: fallthrough /* TLS_ECDHE_RSA_WITH_RC4_128_SHA */
+	//				case 5: fallthrough /* TLS_RSA_WITH_RC4_128_SHA */
+	//				case 4:  Security = 2 /* TLS_RSA_WITH_RC4_128_MD5 */
+	//					/* WEAK */
+	//				case 157: fallthrough /* TLS_RSA_WITH_AES_256_GCM_SHA384 */
+	//				case 61: fallthrough /* TLS_RSA_WITH_AES_256_CBC_SHA256 */
+	//				case 53: fallthrough /* TLS_RSA_WITH_AES_256_CBC_SHA */
+	//				case 132: fallthrough /* TLS_RSA_WITH_CAMELLIA_256_CBC_SHA */
+	//				case 156: fallthrough /* TLS_RSA_WITH_AES_128_GCM_SHA256 */
+	//				case 60: fallthrough /* TLS_RSA_WITH_AES_128_CBC_SHA256 */
+	//				case 47: fallthrough /* TLS_RSA_WITH_AES_128_CBC_SHA */
+	//				case 65: fallthrough /* TLS_RSA_WITH_CAMELLIA_128_CBC_SHA */
+	//				case 49170: fallthrough /* TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA */
+	//				case 22: fallthrough /* TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA */
+	//				case 10: fallthrough /* TLS_RSA_WITH_3DES_EDE_CBC_SHA */
+	//				case 150: fallthrough /* TLS_RSA_WITH_SEED_CBC_SHA */
+	//				case 7: Security = 1 /* TLS_RSA_WITH_IDEA_CBC_SHA */
+	//				default:     Security = 0
+	//				}
 }
 
 func GeoIpSearch(ip, dbPath string) {

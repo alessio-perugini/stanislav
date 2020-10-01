@@ -2,8 +2,8 @@ package portbitmap
 
 import (
 	"errors"
-	b "github.com/alessio-perugini/peng/pkg/bitmap"
 	"math"
+	b "stanislav/pkg/bitmap"
 )
 
 type PortBitmap struct {
