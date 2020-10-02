@@ -7,12 +7,12 @@ import (
 	"log"
 	"net/url"
 	"os"
-	p "stanislav/pkg/peng"
+	"stanislav"
 	"time"
 )
 
 var (
-	config = p.Config{
+	config = stanislav.Config{
 		NumberOfBin:        128,
 		SizeBitmap:         1024,
 		InfluxUrl:          "http://localhost",
@@ -137,7 +137,7 @@ func main() {
 			defer pprof.StopCPUProfile()
 		}*/
 
-	peng := p.New(&config)
-	peng.Start()
+	//peng := stanislav.New(&config)
+	//peng.run()
 
 }

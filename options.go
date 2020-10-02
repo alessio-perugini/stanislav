@@ -1,11 +1,9 @@
-package periodicity
+package stanislav
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
-	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -30,8 +28,6 @@ var (
 	maxWorkers = runtime.NumCPU() * 1e4
 )
 
-type arrUInt32Flags []uint32
-
 // Options represents options
 type Options struct {
 	// global options
@@ -54,23 +50,6 @@ func init() {
 	if version == "" {
 		version = "unknown"
 	}
-}
-
-func (a *arrUInt32Flags) String() string {
-	return "SFlow Type string"
-}
-
-func (a *arrUInt32Flags) Set(value string) error {
-	arr := strings.Split(value, ",")
-	for _, v := range arr {
-		v64, err := strconv.ParseUint(v, 10, 32)
-		if err != nil {
-			return err
-		}
-		*a = append(*a, uint32(v64))
-	}
-
-	return nil
 }
 
 // NewOptions constructs new options
@@ -160,9 +139,6 @@ func (opts *Options) flagSet() {
 	var config string
 	flag.StringVar(&config, "config", "/etc/vflow/vflow.conf", "path to config file")
 
-	opts.getEnv()
-	//opts.loadCfg()
-
 	// global options
 	flag.BoolVar(&opts.Verbosity, "verbosity", opts.Verbosity, "enable/disable verbose logging")
 	flag.BoolVar(&opts.version, "version", opts.version, "show version")
@@ -179,52 +155,7 @@ func (opts *Options) flagSet() {
 
 	flag.Usage = func() {
 		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, `
-    Example:
-	# set workers
-	vflow -sflow-workers 15 -ipfix-workers 20
-	# set 3rd party ipfix collector
-	vflow -ipfix-mirror-addr 192.168.1.10 -ipfix-mirror-port 4319
-	# enaable verbose logging
-	vflow -verbose=true
-	# for more information
-	https://github.com/VerizonDigital/vflow/blob/master/docs/config.md
-    `)
-
 	}
 
 	flag.Parse()
-}
-
-func (opts *Options) getEnv() {
-	r := reflect.TypeOf(*opts)
-	for i := 0; i < r.NumField(); i++ {
-		key := strings.ToUpper(r.Field(i).Tag.Get("yaml"))
-		key = strings.ReplaceAll(key, "-", "_")
-		key = fmt.Sprintf("VFLOW_%s", key)
-		value := os.Getenv(key)
-
-		ve := reflect.ValueOf(opts).Elem()
-		if value != "" {
-			switch ve.Field(i).Kind() {
-			case reflect.String:
-				ve.Field(i).SetString(value)
-			case reflect.Int:
-				v, err := strconv.Atoi(value)
-				if err != nil {
-					log.Fatal(err)
-					return
-				}
-				ve.Field(i).SetInt(int64(v))
-			case reflect.Bool:
-				v, err := strconv.ParseBool(value)
-				if err != nil {
-					log.Fatal(err)
-					return
-				}
-				ve.Field(i).SetBool(v)
-			}
-
-		}
-	}
 }

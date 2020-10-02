@@ -1,4 +1,4 @@
-package periodicity
+package stanislav
 
 import (
 	"bytes"

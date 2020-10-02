@@ -1,4 +1,4 @@
-package peng
+package stanislav
 
 import (
 	"encoding/csv"
@@ -8,7 +8,6 @@ import (
 	"github.com/google/gopacket/pcap"
 	"log"
 	"os"
-	"os/signal"
 	"stanislav/pkg/portbitmap"
 	"time"
 )
@@ -16,6 +15,7 @@ import (
 type Peng struct {
 	Config                       *Config
 	ClientTraffic, ServerTraffic *portbitmap.PortBitmap
+	stop                         bool
 }
 
 type Config struct {
@@ -54,7 +54,7 @@ func New(cfg *Config) *Peng {
 	return &peng
 }
 
-func (p *Peng) Start() {
+func (p *Peng) run() {
 	getMyIp()
 	p.LoadBlackListJa3InMemory()
 
@@ -69,19 +69,34 @@ func (p *Peng) Start() {
 	}
 	defer pHandle.Close()
 
-	go func() {
-		packet := gopacket.NewPacketSource(pHandle, pHandle.LinkType())
+	//go func() {
+	packet := gopacket.NewPacketSource(pHandle, pHandle.LinkType())
 
-		time.AfterFunc(p.Config.TimeFrame, p.handler)
-		for packet := range packet.Packets() {
-			p.inspect(packet)
+	time.AfterFunc(p.Config.TimeFrame, p.handler)
+	for packet := range packet.Packets() {
+		if p.stop { //TODO forse passare il puntatore di peng
+			return
 		}
-	}()
-	sig := make(chan os.Signal, 1024)
-	signal.Notify(sig, os.Interrupt)
-	<-sig
-	log.Println("Quitting Peng, bye!")
+		p.inspect(packet)
+	}
+	//}()
 
+	/*
+		sig := make(chan os.Signal, 1024)
+		signal.Notify(sig, os.Interrupt)
+		<-sig
+		log.Println("Quitting Peng, bye!")
+
+		for k, v := range topCountryVisit {
+			fmt.Printf("[%s] %d visit.\n", k, v)
+		}*/
+}
+
+func (p *Peng) shutdown() {
+	p.stop = true
+	logger.Println("stopping peng module...")
+	time.Sleep(1 * time.Second)
+	//TODO
 	for k, v := range topCountryVisit {
 		fmt.Printf("[%s] %d visit.\n", k, v)
 	}
@@ -149,6 +164,9 @@ func (p *Peng) handler() {
 	p.ClientTraffic.ClearAll()
 	p.ServerTraffic.ClearAll()
 
+	if p.stop {
+		return
+	}
 	//Wait timeframe time, before further actions
 	time.AfterFunc(p.Config.TimeFrame, p.handler)
 }

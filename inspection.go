@@ -1,4 +1,4 @@
-package peng
+package stanislav
 
 import (
 	"fmt"
@@ -34,6 +34,12 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 		}
 	}
 
+	externalIp := ipv4.DstIP.String()
+	if packetDestToMyPc {
+		externalIp = ipv4.SrcIP.String()
+	}
+
+	//Port scanning check
 	if tcpLayer := packet.Layer(layers.LayerTypeTCP); tcpLayer != nil {
 		tcp, _ := tcpLayer.(*layers.TCP)
 
@@ -48,22 +54,6 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 				}
 			}
 		}
-	}
-
-	/*
-		if udpLayer := packet.Layer(layers.LayerTypeUDP); udpLayer != nil {
-			udp, _ := udpLayer.(*layers.UDP)
-
-			totalSize := udp.Length
-			payloadSize := len(udp.Payload)
-			goodput := totalSize - uint16(payloadSize)
-
-			if
-		}*/
-
-	externalIp := ipv4.DstIP.String()
-	if packetDestToMyPc {
-		externalIp = ipv4.SrcIP.String()
 	}
 
 	GeoIpSearch(externalIp, p.Config.GeoIpDb)
