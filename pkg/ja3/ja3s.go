@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dreadl0ck/tlsx"
+	"stanislav/pkg/tlsx"
 )
 
 // ReadFileJa3s reads the PCAP file at the given path
@@ -138,7 +138,6 @@ func BareJa3s(hello *tlsx.ServerHelloBasic) []byte {
 	buffer = append(buffer, sepFieldByte)
 
 	if len(hello.Extensions) > 0 {
-
 
 		/*
 		 *	Extensions

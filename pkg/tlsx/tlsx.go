@@ -3,7 +3,7 @@ package tlsx
 import "errors"
 
 const (
-	SNINameTypeDNS uint8 = 0
+	SNINameTypeDNS    uint8 = 0
 	OCSPStatusRequest uint8 = 1
 )
 

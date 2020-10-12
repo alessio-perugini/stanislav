@@ -241,13 +241,13 @@ func (ch ServerHello) String() string {
 }
 
 type ServerHelloBasic struct {
-	Vers                         uint16
-	Random                       []byte
-	SessionID                    []byte
-	CipherSuite                  uint16
-	CompressionMethod            uint8
-	SelectedGroup                CurveID
-	Extensions                   []uint16
+	Vers              uint16
+	Random            []byte
+	SessionID         []byte
+	CipherSuite       uint16
+	CompressionMethod uint8
+	SelectedGroup     CurveID
+	Extensions        []uint16
 }
 
 // Unmarshal only parses the fields needed for JA3 fingerprinting

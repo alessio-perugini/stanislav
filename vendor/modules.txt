@@ -6,11 +6,6 @@ github.com/VerizonDigital/vflow/reader
 # github.com/deepmap/oapi-codegen v1.3.6
 github.com/deepmap/oapi-codegen/pkg/runtime
 github.com/deepmap/oapi-codegen/pkg/types
-# github.com/dreadl0ck/ja3 v1.0.0
-## explicit
-github.com/dreadl0ck/ja3
-# github.com/dreadl0ck/tlsx v0.0.0-20200303221230-8cb859306e07
-github.com/dreadl0ck/tlsx
 # github.com/google/gopacket v1.1.18
 ## explicit
 github.com/google/gopacket
@@ -52,6 +47,7 @@ github.com/valyala/bytebufferpool
 # github.com/valyala/fasttemplate v1.1.0
 github.com/valyala/fasttemplate
 # golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
+## explicit
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
 golang.org/x/crypto/cryptobyte

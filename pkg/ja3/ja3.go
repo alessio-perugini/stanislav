@@ -17,15 +17,14 @@ package ja3
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"stanislav/pkg/tlsx"
 	"strconv"
-
-	"github.com/dreadl0ck/tlsx"
 )
 
 var (
 	// Debug indicates whether we run in debug mode.
 	Debug        = false
-	Security       uint8
+	Security     uint8
 	sepValueByte = byte(45)
 	sepFieldByte = byte(44)
 

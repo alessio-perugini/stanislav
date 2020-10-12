@@ -2,13 +2,13 @@ package stanislav
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/ja3"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	_ "github.com/google/gopacket/layers" //Used to init internal struct
 	"github.com/oschwald/geoip2-golang"
 	"log"
 	"net"
+	"stanislav/pkg/ja3"
 	"stanislav/pkg/portbitmap"
 	"time"
 )

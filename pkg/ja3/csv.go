@@ -56,7 +56,7 @@ func ReadFileCSV(file string, out io.Writer, separator string, doJA3s bool) {
 			// create gopacket
 			p = gopacket.NewPacket(data, layers.LinkTypeEthernet, gopacket.Lazy)
 			// get JA3 if possible
-			digest = DigestHexPacket(p)
+			digest   = DigestHexPacket(p)
 			isServer bool
 		)
 
