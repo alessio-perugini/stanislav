@@ -2,6 +2,7 @@ package stanislav
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"github.com/google/gopacket"
 	_ "github.com/google/gopacket/layers" //Used to init internal struct
@@ -34,6 +35,7 @@ type Config struct {
 	TimeFrame          time.Duration
 	Ja3BlackListFile   string
 	GeoIpDb            string
+	OfflinePcap        string
 }
 
 var ja3BlackList map[string]string
@@ -57,12 +59,18 @@ func New(cfg *Config) *Peng {
 func (p *Peng) run() {
 	getMyIp()
 	p.LoadBlackListJa3InMemory()
+	var pHandle *pcap.Handle
+	var err error
 
-	pHandle, err := pcap.OpenLive(
-		p.Config.NetworkInterface,
-		int32(65535),
-		false,
-		pcap.BlockForever)
+	if p.Config.OfflinePcap == "" {
+		pHandle, err = pcap.OpenLive(
+			p.Config.NetworkInterface,
+			int32(65535),
+			false,
+			pcap.BlockForever)
+	} else {
+		pHandle, err = pcap.OpenOffline(p.Config.OfflinePcap)
+	}
 
 	if err != nil {
 		log.Fatal(err)
@@ -96,10 +104,11 @@ func (p *Peng) shutdown() {
 	p.stop = true
 	logger.Println("stopping peng module...")
 	time.Sleep(1 * time.Second)
+
 	//TODO
-	for k, v := range topCountryVisit {
-		fmt.Printf("[%s] %d visit.\n", k, v)
-	}
+	fmt.Println("\nTOP COUNTRY VISIT")
+	threatJson, _ := json.Marshal(topCountryVisit)
+	fmt.Println(string(threatJson))
 }
 
 func (p *Peng) LoadBlackListJa3InMemory() {
@@ -148,8 +157,13 @@ func (p *Peng) PrintAllInfo() {
 		if p.Config.Verbose >= 2 {
 			fmt.Printf("entropy of each bin: %f\n", v.EntropyOfEachBin())
 		}
+
+		totalEntroy := v.EntropyTotal()
+		if totalEntroy >= 0.5 {
+			AddPossibleThreat("general", fmt.Sprintf("probably a port scan. Total entropy: %.2f", totalEntroy))
+		}
 		if p.Config.Verbose >= 1 {
-			fmt.Printf("total entropy: %f\n", v.EntropyTotal())
+			fmt.Printf("total entropy: %f\n", totalEntroy)
 		}
 	}
 }

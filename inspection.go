@@ -57,6 +57,7 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 	}
 
 	GeoIpSearch(externalIp, p.Config.GeoIpDb)
+	externalIp = ipv4.SrcIP.String() + "/" + ipv4.DstIP.String() //TODO
 
 	if len(ja3BlackList) != 0 {
 		ja3.Security = 0
@@ -73,9 +74,11 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 		}
 
 		if name, ok := ja3BlackList[ja3md5]; ok {
+			AddPossibleThreat(externalIp, "ja3 blocklist "+name)
 			fmt.Printf("[%s] %s appears in the blocked Ja3 list as %s!\n", externalIp, ja3md5, name)
 		}
 		if name, ok := ja3BlackList[ja3smd5]; ok {
+			AddPossibleThreat(externalIp, "ja3s blocklist "+name)
 			fmt.Printf("[%s] %s appears in the blocked Ja3 list as %s!\n", externalIp, ja3smd5, name)
 		}
 
@@ -83,11 +86,16 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 		//TLS cipher security check
 		switch ja3.Security {
 		case 1:
+			AddPossibleThreat(externalIp, "Weak tls cipher")
 			fmt.Println("Weak tls cipher")
 		case 2:
+			AddPossibleThreat(externalIp, "Insecure tls cipher")
 			fmt.Println("Insecure tls cipher")
 		}
 	}
+
+	//TODO add http numeric ip
+
 	//				switch hello.CipherSuite {
 	//				case 49169: fallthrough /* TLS_ECDHE_RSA_WITH_RC4_128_SHA */
 	//				case 5: fallthrough /* TLS_RSA_WITH_RC4_128_SHA */

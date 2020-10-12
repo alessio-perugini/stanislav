@@ -110,3 +110,11 @@ func WriteObjToJSONFile(fname string, obj interface{}) {
 	encoder := json.NewEncoder(file)
 	encoder.Encode(obj)
 }
+
+func AddPossibleThreat(ip, reason string) {
+	if reasons, ok := PossibleThreat[ip]; ok {
+		reasons = append(reasons, reason)
+	} else {
+		PossibleThreat[ip] = []string{reason}
+	}
+}

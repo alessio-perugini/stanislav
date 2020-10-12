@@ -1,6 +1,8 @@
 package main
 
+//TODO add support for ipv6, netflow5 and IPFX
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/google/gopacket/pcap"
@@ -26,9 +28,9 @@ var (
 		NetworkInterface:   "",
 		Ja3BlackListFile:   "",
 		GeoIpDb:            "",
+		OfflinePcap:        "",
 	}
-
-	timeFrame = "1m"
+	timeFrame = "15s"
 
 	showInterfaceNames bool
 	versionFlag        bool
@@ -37,6 +39,14 @@ var (
 )
 
 func init() {
+	//NetFlow
+	flag.StringVar(&stanislav.FlowPath, "flowPath", "", "dir path to load flows of nProbe")
+	flag.Float64Var(&stanislav.Tolerance, "tolerance", 10, "maximum % tolerance before flag possible periodic flow.")
+	flag.IntVar(&stanislav.NTwToCompare, "nCompare", 3, "number o time windows to compare to evaluate a possible periodicity")
+	flag.StringVar(&stanislav.IpAddrNF, "ip", "", "ip of netflow collector")
+	flag.StringVar(&stanislav.PortNF, "port", "2055", "port of netflow collector")
+	flag.IntVar(&stanislav.Verbose, "verbose", 0, "verbosity level. (1=low,2=medium,3=high")
+
 	//Bitmap
 	flag.UintVar(&config.NumberOfBin, "bin", 16, "number of bin in your bitmap")
 	flag.UintVar(&config.SizeBitmap, "size", 1024, "size of your bitmap")
@@ -51,12 +61,12 @@ func init() {
 	//other
 	flag.BoolVar(&versionFlag, "version", false, "output version")
 	flag.StringVar(&config.SaveFilePath, "export", "", "file path to save the peng result as csv")
-	flag.StringVar(&timeFrame, "timeFrame", "1m", "interval time to detect scans. Number + (s = seconds, m = minutes, h = hours)")
-	flag.UintVar(&config.Verbose, "verbose", 1, "set verbose level (1-3)")
+	flag.StringVar(&timeFrame, "timeFrame", "15s", "interval time to detect scans. Number + (s = seconds, m = minutes, h = hours)")
 	flag.StringVar(&config.NetworkInterface, "network", "", "name of your network interface")
 	flag.BoolVar(&showInterfaceNames, "interfaces", false, "show the list of all your network interfaces")
 	flag.StringVar(&config.Ja3BlackListFile, "ja3", "", "file path of malicious ja3 fingerprints")
 	flag.StringVar(&config.GeoIpDb, "geoip", "", "file path of geoip db")
+	flag.StringVar(&config.OfflinePcap, "pcap", "", "pcap file to read")
 }
 
 func flagConfig() {
@@ -64,11 +74,14 @@ func flagConfig() {
 		"version %s %s", version, commit)
 
 	flag.Usage = func() { //help flag
-		fmt.Fprintf(flag.CommandLine.Output(), "%s\n\nUsage: sys-status [options]\n", appString)
+		fmt.Fprintf(flag.CommandLine.Output(), "\n\nUsage: flow-periodicity [options]\n")
 		flag.PrintDefaults()
 	}
 
 	flag.Parse()
+	stanislav.PercentageDeviation = stanislav.Tolerance //TODO refactor this
+	//TODO add check for ip and port
+	//TODO add check for tolerance 0 <= tolerance <= 100
 
 	if versionFlag { //version flag
 		fmt.Fprintf(flag.CommandLine.Output(), "%s\n", appString)
@@ -123,21 +136,36 @@ func flagConfig() {
 	fmt.Printf("%s\n", appString)
 }
 
-//var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
-
 func main() {
 	flagConfig()
-	/*
-		if *cpuprofile != "" {
-			f, err := os.Create(*cpuprofile)
-			if err != nil {
-				log.Fatal(err)
-			}
-			pprof.StartCPUProfile(f)
-			defer pprof.StopCPUProfile()
-		}*/
 
-	//peng := stanislav.New(&config)
-	//peng.run()
+	if stanislav.FlowPath != "" {
+		stanislav.OfflineMode()
+		FlowStats()
+		stanislav.WriteObjToJSONFile(time.Now().Format(time.RFC3339)+"_report.json", stanislav.PeriodiFlows)
+		return
+	}
 
+	stanislav.Conf = &config //TODO handle nil
+	stanislav.LiveMode()
+
+	ThreatStats()
+	FlowStats()
+
+	stanislav.WriteObjToJSONFile(time.Now().Format(time.RFC3339)+"_report.json", stanislav.PeriodiFlows) //TODO change this like peng that every X sec dump
+}
+
+func ThreatStats() {
+	fmt.Println("\nTHREAT")
+	threatJson, _ := json.Marshal(stanislav.PossibleThreat)
+	fmt.Println(string(threatJson))
+}
+
+func FlowStats() {
+	fmt.Println("\nPeriodic flows")
+	json, err := stanislav.PeriodiFlows.Marshal()
+	if err != nil {
+		return
+	}
+	fmt.Printf("%s", string(json))
 }

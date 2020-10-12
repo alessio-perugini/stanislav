@@ -18,6 +18,7 @@ var (
 	analisi             = AllFlows{}
 	PeriodiFlows        = PeriodicFlows{}
 	opts                *Options
+	Conf                *Config
 	logger              *log.Logger
 	PercentageDeviation = 5.0
 	Verbose             = 0
@@ -32,7 +33,6 @@ var (
 type Options struct {
 	// global options
 	Verbosity bool
-	LogFile   string `yaml:"log-file"`
 	CPUCap    string `yaml:"cpu-cap"`
 	Logger    *log.Logger
 	version   bool
@@ -55,7 +55,7 @@ func init() {
 // NewOptions constructs new options
 func NewOptions() *Options {
 	return &Options{
-		Verbosity: true,
+		Verbosity: false,
 		version:   false,
 		CPUCap:    "100%",
 		Logger:    log.New(os.Stderr, "[LOG] ", log.Ldate|log.Ltime),
@@ -73,20 +73,11 @@ func NewOptions() *Options {
 func GetOptions() *Options {
 	opts := NewOptions()
 
-	opts.flagSet()
+	//opts.flagSet()
 
 	if opts.Verbosity {
 		opts.Logger.Printf("the full logging enabled")
 		opts.Logger.SetFlags(log.LstdFlags | log.Lshortfile)
-	}
-
-	if opts.LogFile != "" {
-		f, err := os.OpenFile(opts.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			opts.Logger.Println(err)
-		} else {
-			opts.Logger.SetOutput(f)
-		}
 	}
 
 	return opts
@@ -135,14 +126,12 @@ func (opts Options) getCPU() int {
 }
 
 func (opts *Options) flagSet() {
-
 	var config string
 	flag.StringVar(&config, "config", "/etc/vflow/vflow.conf", "path to config file")
 
 	// global options
 	flag.BoolVar(&opts.Verbosity, "verbosity", opts.Verbosity, "enable/disable verbose logging")
 	flag.BoolVar(&opts.version, "version", opts.version, "show version")
-	flag.StringVar(&opts.LogFile, "log-file", opts.LogFile, "log file name")
 	flag.StringVar(&opts.CPUCap, "cpu-cap", opts.CPUCap, "Maximum amount of CPU [percent / number]")
 
 	// netflow version 9

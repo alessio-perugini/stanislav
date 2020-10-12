@@ -6,7 +6,6 @@ import (
 	"runtime"
 	"sync"
 	"syscall"
-	"time"
 )
 
 type proto interface {
@@ -14,28 +13,7 @@ type proto interface {
 	shutdown()
 }
 
-var (
-	config = Config{
-		NumberOfBin:        128,
-		SizeBitmap:         1024,
-		InfluxUrl:          "http://localhost",
-		InfluxPort:         9999,
-		InfluxBucket:       "",
-		InfluxOrganization: "",
-		InfluxAuthToken:    "",
-		SaveFilePath:       "peng_result.csv",
-		UseInflux:          false,
-		Verbose:            uint(1),
-		NetworkInterface:   "eno1",
-		Ja3BlackListFile:   "/media/ale/DatiD/Progetti/Progetti2019/GoPrj/stanislav/resources/ja3/ja3_fingerprints.csv",
-		GeoIpDb:            "/media/ale/DatiD/Progetti/Progetti2019/GoPrj/stanislav/resources/GeoLite2-City.mmdb",
-		TimeFrame:          time.Second * 15,
-	}
-
-	showInterfaceNames bool
-	versionFlag        bool
-	commit             = "commithash"
-)
+var PossibleThreat = make(map[string][]string)
 
 func LiveMode() {
 	var (
@@ -48,7 +26,7 @@ func LiveMode() {
 	logger = opts.Logger
 
 	netflow9 := NewNetflowV9()
-	peng := New(&config)
+	peng := New(Conf)
 	protos := []proto{netflow9, peng}
 
 	for _, p := range protos {

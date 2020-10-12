@@ -134,6 +134,7 @@ func ChangePeriodicStatus(key string, fi *FlowInfo, v bool) {
 	}
 
 	if v && !fi.CurrentlyPeriodic {
+		AddPossibleThreat(key, fmt.Sprintf(" periodic frequency: %.2fs seen %d times.", fi.TWDuration, fi.PeriodicityCounter))
 		log.Printf("%s \tbecame periodic! Seen %d times. Frequency: %.2fs ", key, fi.PeriodicityCounter, fi.TWDuration)
 	} else {
 		log.Printf("%s \tnot periodic anymore! Seen %d times. Frequency: %.2fs ", key, fi.PeriodicityCounter, fi.TWDuration)

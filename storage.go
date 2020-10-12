@@ -17,7 +17,7 @@ func (p *Peng) PushToInfluxDb() {
 	//Get entropy and set data to influx
 	client := influxdb2.NewClient(p.Config.InfluxUrl+":"+fmt.Sprint(p.Config.InfluxPort), p.Config.InfluxAuthToken)
 	defer client.Close()
-	writeApi := client.WriteApi(p.Config.InfluxOrganization, p.Config.InfluxBucket) //non-blocking
+	writeApi := client.WriteAPI(p.Config.InfluxOrganization, p.Config.InfluxBucket) //non-blocking
 
 	//Send point of system with hostname and values about in and out bits
 	point := influxdb2.NewPoint(
