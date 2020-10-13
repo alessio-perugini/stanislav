@@ -316,3 +316,51 @@ func (ch ServerHelloBasic) String() string {
 
 	return str
 }
+
+//TODO finire la versione
+func (ch *ServerHelloBasic) Security() (cipher, version uint8) {
+	switch ch.CipherSuite {
+	case 49169:
+		fallthrough /* TLS_ECDHE_RSA_WITH_RC4_128_SHA */
+	case 5:
+		fallthrough /* TLS_RSA_WITH_RC4_128_SHA */
+	case 4:
+		cipher = 2 /* TLS_RSA_WITH_RC4_128_MD5 */
+		/* WEAK */
+	case 157:
+		fallthrough /* TLS_RSA_WITH_AES_256_GCM_SHA384 */
+	case 61:
+		fallthrough /* TLS_RSA_WITH_AES_256_CBC_SHA256 */
+	case 53:
+		fallthrough /* TLS_RSA_WITH_AES_256_CBC_SHA */
+	case 132:
+		fallthrough /* TLS_RSA_WITH_CAMELLIA_256_CBC_SHA */
+	case 156:
+		fallthrough /* TLS_RSA_WITH_AES_128_GCM_SHA256 */
+	case 60:
+		fallthrough /* TLS_RSA_WITH_AES_128_CBC_SHA256 */
+	case 47:
+		fallthrough /* TLS_RSA_WITH_AES_128_CBC_SHA */
+	case 65:
+		fallthrough /* TLS_RSA_WITH_CAMELLIA_128_CBC_SHA */
+	case 49170:
+		fallthrough /* TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA */
+	case 22:
+		fallthrough /* TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA */
+	case 10:
+		fallthrough /* TLS_RSA_WITH_3DES_EDE_CBC_SHA */
+	case 150:
+		fallthrough /* TLS_RSA_WITH_SEED_CBC_SHA */
+	case 7:
+		cipher = 1 /* TLS_RSA_WITH_IDEA_CBC_SHA */
+	default:
+		cipher = 0
+	}
+
+	switch ch.Vers {
+	case 0x0302:
+		version = 1 //< 1.1
+	}
+
+	return cipher, version
+}

@@ -24,7 +24,6 @@ import (
 var (
 	// Debug indicates whether we run in debug mode.
 	Debug        = false
-	Security     uint8
 	sepValueByte = byte(45)
 	sepFieldByte = byte(44)
 
@@ -55,6 +54,9 @@ func Digest(hello *tlsx.ClientHelloBasic) [md5.Size]byte {
 
 // DigestHex produce md5 hash from bare string.
 func DigestHex(hello *tlsx.ClientHelloBasic) string {
+	if hello == nil {
+		return ""
+	}
 	return BareToDigestHex(Bare(hello))
 }
 

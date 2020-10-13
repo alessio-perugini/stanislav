@@ -108,7 +108,7 @@ func WriteObjToJSONFile(fname string, obj interface{}) {
 
 func AddPossibleThreat(ip, reason string) {
 	if reasons, ok := PossibleThreat[ip]; ok {
-		for _,v := range reasons {//avoid duplicate reasons
+		for _, v := range reasons { //avoid duplicate reasons
 			if v == reason {
 				return
 			}
@@ -120,7 +120,7 @@ func AddPossibleThreat(ip, reason string) {
 	}
 }
 
-func LoadBlockListedC2(){
+func LoadBlockListedC2() {
 	if Conf.IpBlackListFile == "" {
 		logger.Println("c2 block list not selected")
 		return
@@ -144,9 +144,16 @@ func LoadBlockListedC2(){
 		}
 
 		//Parse csv fields
-		ip := csvField[1] //ip
+		ip := csvField[1]   //ip
 		name := csvField[4] //malware name
 
 		blackListIp[ip] = name
+	}
+}
+
+func checkAndSetPossibleThreat(blockedMap map[string]string, key, ip, reason string) {
+	if name, ok := blockedMap[key]; ok {
+		AddPossibleThreat(ip, reason+" "+name)
+		logger.Printf("[%s] appears in the blocked list. %s!\n", ip, name)
 	}
 }

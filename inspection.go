@@ -9,6 +9,7 @@ import (
 	"net"
 	"stanislav/pkg/ja3"
 	"stanislav/pkg/portbitmap"
+	"stanislav/pkg/tlsx"
 )
 
 var myIPs = make([]net.IP, 0, 2)
@@ -16,6 +17,13 @@ var topCountryVisit = make(map[string]int)
 
 func (p *Peng) inspect(packet gopacket.Packet) {
 	var ipv4Layer gopacket.Layer //skip inspection if i can't obtain ip layer
+	var clientHello *tlsx.ClientHelloBasic
+	var serverHello *tlsx.ServerHelloBasic
+
+	/*	if nl := packet.NetworkLayer(); nl != nil {
+		fmt.Println(nl)
+	}*/
+
 	if ipv4Layer = packet.Layer(layers.LayerTypeIPv4); ipv4Layer == nil {
 		return
 	}
@@ -37,19 +45,32 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 		externalIp = ipv4.SrcIP.String()
 	}
 
-	//Port scanning check
-	if tcpLayer := packet.Layer(layers.LayerTypeTCP); tcpLayer != nil {
-		tcp, _ := tcpLayer.(*layers.TCP)
+	if tl := packet.TransportLayer(); tl != nil {
+		if tcp, ok := tl.(*layers.TCP); ok {
+			if tcp.SYN {
+				// Connection setup
+				if !tcp.ACK { //Port scanning check
+					p.PortScanningHandler(uint16(tcp.DstPort), packetDestToMyPc)
 
-		if tcp.SYN && !tcp.ACK {
-			p.PortScanningHandler(uint16(tcp.DstPort), packetDestToMyPc)
-
-			if p.Config.Verbose == 3 {
-				if packetDestToMyPc {
-					logger.Printf("server traffic: %s \n", tcp.DstPort.String())
-				} else {
-					logger.Printf("client traffic: %s \n", tcp.DstPort.String())
+					if p.Config.Verbose == 3 {
+						if packetDestToMyPc {
+							logger.Printf("server traffic: %s \n", tcp.DstPort.String())
+						} else {
+							logger.Printf("client traffic: %s \n", tcp.DstPort.String())
+						}
+					}
 				}
+			} else if tcp.FIN {
+				// Connection teardown
+			} else if tcp.ACK && len(tcp.LayerPayload()) == 0 {
+				// Acknowledgement packet
+			} else if tcp.RST {
+				// Unexpected packet
+			} else {
+				// data packet
+				//JA3 CHECK
+				clientHello = ja3.GetJa3HelloFromPayload(tcp.LayerPayload())
+				serverHello = ja3.GetJa3sHelloFromPayload(tcp.LayerPayload())
 			}
 		}
 	}
@@ -58,17 +79,17 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 
 	//BLACKLISTED c2 Server
 	if name, ok := blackListIp[externalIp]; ok {
-		AddPossibleThreat(externalIp, "c2 server " + name)
-		logger.Printf("[%s] appears in the blocked c2 list as %s!\n", externalIp, name)
+		AddPossibleThreat(externalIp, "c2 server "+name)
 	}
+
+	checkAndSetPossibleThreat(blackListIp, externalIp, externalIp, "c2 server")
 
 	externalIp = ipv4.SrcIP.String() + "/" + ipv4.DstIP.String() //TODO
 
-	if len(ja3BlackList) != 0 {
-		ja3.Security = 0
-		ja3md5 := ja3.DigestHexPacket(packet) //TODO replace this in the previous tcp handler
-		ja3smd5 := ja3.DigestHexPacketJa3s(packet)
+	ja3md5 := ja3.DigestHex(clientHello)
+	ja3smd5 := ja3.DigestHexJa3s(serverHello)
 
+	if len(ja3BlackList) != 0 {
 		if p.Config.Verbose == 2 {
 			if ja3md5 != "" {
 				logger.Printf("J:  %s\n", ja3md5)
@@ -77,7 +98,8 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 				logger.Printf("JS: %s\n", ja3smd5)
 			}
 		}
-		//TODO improvmenet external IP detection, especially in offline mode! Maybe loading a filtering list
+
+		//TODO improvement external IP detection, especially in offline mode! Maybe loading a filtering list
 		if name, ok := ja3BlackList[ja3md5]; ok {
 			AddPossibleThreat(externalIp, "ja3 blocklist "+name)
 			logger.Printf("[%s] %s appears in the blocked Ja3 list as %s!\n", externalIp, ja3md5, name)
@@ -86,22 +108,30 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 			AddPossibleThreat(externalIp, "ja3s blocklist "+name)
 			logger.Printf("[%s] %s appears in the blocked Ja3 list as %s!\n", externalIp, ja3smd5, name)
 		}
-
-
-		//TODO add TLS version check
-		//TLS cipher security check
-		switch ja3.Security {
-		case 1:
-			AddPossibleThreat(externalIp, "Weak tls cipher")
-			logger.Println("Weak tls cipher")
-		case 2:
-			AddPossibleThreat(externalIp, "Insecure tls cipher")
-			logger.Println("Insecure tls cipher")
-		}
 	}
 
-	//TODO add http numeric ip
+	//TODO add TLS version check
+	//TLS cipher security check
 
+	if serverHello == nil {
+		return
+	}
+
+	tlsServerCipher, tlsServerVersion := serverHello.Security()
+	switch tlsServerCipher {
+	case 1:
+		AddPossibleThreat(externalIp, "Weak tls cipher")
+		logger.Printf("[%s] Weak tls cipher", externalIp)
+	case 2:
+		AddPossibleThreat(externalIp, "Insecure tls cipher")
+		logger.Printf("[%s] Insecure tls cipher", externalIp)
+	}
+
+	switch tlsServerVersion {
+	case 1:
+		AddPossibleThreat(externalIp, "Obsolete tls version")
+		logger.Printf("[%s] Obsolete tls version", externalIp)
+	}
 }
 
 func GeoIpSearch(ip, dbPath string) {

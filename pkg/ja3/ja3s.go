@@ -107,6 +107,9 @@ func DigestJa3s(hello *tlsx.ServerHelloBasic) [md5.Size]byte {
 
 // DigestHex produce md5 hash from bare string.
 func DigestHexJa3s(hello *tlsx.ServerHelloBasic) string {
+	if hello == nil {
+		return ""
+	}
 	return BareToDigestHex(BareJa3s(hello))
 }
 
