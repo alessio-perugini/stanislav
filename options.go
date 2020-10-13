@@ -21,7 +21,7 @@ var (
 	Conf                *Config
 	logger              *log.Logger
 	PercentageDeviation = 5.0
-	Verbose             = 0
+	blackListIp         = make(map[string]string)
 )
 
 var (

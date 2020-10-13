@@ -3,7 +3,6 @@ package stanislav
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
 	"time"
 )
@@ -72,6 +71,16 @@ func InspectFlow(rf RawFlow) {
 		!ExcludeMultiAndBroadcast(rf.Ipv4SrcAddr) && !ExcludeMultiAndBroadcast(rf.Ipv4DstAddr)) {
 		return
 	}
+	//TODO create a function that handles C2 server blocklist
+	if name, ok := blackListIp[rf.Ipv4DstAddr]; ok {
+		AddPossibleThreat(rf.Ipv4DstAddr, "c2 server " + name)
+		logger.Printf("[%s] appears in the blocked c2 list as %s!\n", rf.Ipv4DstAddr, name)
+	}
+
+	if name, ok := blackListIp[rf.Ipv4SrcAddr]; ok {
+		AddPossibleThreat(rf.Ipv4SrcAddr, "c2 server " + name)
+		logger.Printf("[%s] appears in the blocked c2 list as %s!\n", rf.Ipv4SrcAddr, name)
+	}
 
 	//https://tools.ietf.org/html/rfc5102#section-5
 	if rf.EndReason == 2 {
@@ -134,10 +143,10 @@ func ChangePeriodicStatus(key string, fi *FlowInfo, v bool) {
 	}
 
 	if v && !fi.CurrentlyPeriodic {
-		AddPossibleThreat(key, fmt.Sprintf(" periodic frequency: %.2fs seen %d times.", fi.TWDuration, fi.PeriodicityCounter))
-		log.Printf("%s \tbecame periodic! Seen %d times. Frequency: %.2fs ", key, fi.PeriodicityCounter, fi.TWDuration)
+		AddPossibleThreat(key, fmt.Sprintf("periodic frequency: %.2fs seen %d times.", fi.TWDuration, fi.PeriodicityCounter))
+		logger.Printf("%s \tbecame periodic! Seen %d times. Frequency: %.2fs ", key, fi.PeriodicityCounter, fi.TWDuration)
 	} else {
-		log.Printf("%s \tnot periodic anymore! Seen %d times. Frequency: %.2fs ", key, fi.PeriodicityCounter, fi.TWDuration)
+		logger.Printf("%s \tnot periodic anymore! Seen %d times. Frequency: %.2fs ", key, fi.PeriodicityCounter, fi.TWDuration)
 	}
 
 	fi.CurrentlyPeriodic = v

@@ -1,7 +1,6 @@
 package stanislav
 
 import (
-	"fmt"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	_ "github.com/google/gopacket/layers" //Used to init internal struct
@@ -10,7 +9,6 @@ import (
 	"net"
 	"stanislav/pkg/ja3"
 	"stanislav/pkg/portbitmap"
-	"time"
 )
 
 var myIPs = make([]net.IP, 0, 2)
@@ -48,15 +46,22 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 
 			if p.Config.Verbose == 3 {
 				if packetDestToMyPc {
-					fmt.Printf("[%s] server traffic: %s \n", time.Now().Local().String(), tcp.DstPort.String())
+					logger.Printf("server traffic: %s \n", tcp.DstPort.String())
 				} else {
-					fmt.Printf("[%s] client traffic: %s \n", time.Now().Local().String(), tcp.DstPort.String())
+					logger.Printf("client traffic: %s \n", tcp.DstPort.String())
 				}
 			}
 		}
 	}
 
 	GeoIpSearch(externalIp, p.Config.GeoIpDb)
+
+	//BLACKLISTED c2 Server
+	if name, ok := blackListIp[externalIp]; ok {
+		AddPossibleThreat(externalIp, "c2 server " + name)
+		logger.Printf("[%s] appears in the blocked c2 list as %s!\n", externalIp, name)
+	}
+
 	externalIp = ipv4.SrcIP.String() + "/" + ipv4.DstIP.String() //TODO
 
 	if len(ja3BlackList) != 0 {
@@ -66,56 +71,37 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 
 		if p.Config.Verbose == 2 {
 			if ja3md5 != "" {
-				fmt.Printf("J:  %s\n", ja3md5)
+				logger.Printf("J:  %s\n", ja3md5)
 			}
 			if ja3smd5 != "" {
-				fmt.Printf("JS: %s\n", ja3smd5)
+				logger.Printf("JS: %s\n", ja3smd5)
 			}
 		}
-
+		//TODO improvmenet external IP detection, especially in offline mode! Maybe loading a filtering list
 		if name, ok := ja3BlackList[ja3md5]; ok {
 			AddPossibleThreat(externalIp, "ja3 blocklist "+name)
-			fmt.Printf("[%s] %s appears in the blocked Ja3 list as %s!\n", externalIp, ja3md5, name)
+			logger.Printf("[%s] %s appears in the blocked Ja3 list as %s!\n", externalIp, ja3md5, name)
 		}
 		if name, ok := ja3BlackList[ja3smd5]; ok {
 			AddPossibleThreat(externalIp, "ja3s blocklist "+name)
-			fmt.Printf("[%s] %s appears in the blocked Ja3 list as %s!\n", externalIp, ja3smd5, name)
+			logger.Printf("[%s] %s appears in the blocked Ja3 list as %s!\n", externalIp, ja3smd5, name)
 		}
+
 
 		//TODO add TLS version check
 		//TLS cipher security check
 		switch ja3.Security {
 		case 1:
 			AddPossibleThreat(externalIp, "Weak tls cipher")
-			fmt.Println("Weak tls cipher")
+			logger.Println("Weak tls cipher")
 		case 2:
 			AddPossibleThreat(externalIp, "Insecure tls cipher")
-			fmt.Println("Insecure tls cipher")
+			logger.Println("Insecure tls cipher")
 		}
 	}
 
 	//TODO add http numeric ip
 
-	//				switch hello.CipherSuite {
-	//				case 49169: fallthrough /* TLS_ECDHE_RSA_WITH_RC4_128_SHA */
-	//				case 5: fallthrough /* TLS_RSA_WITH_RC4_128_SHA */
-	//				case 4:  Security = 2 /* TLS_RSA_WITH_RC4_128_MD5 */
-	//					/* WEAK */
-	//				case 157: fallthrough /* TLS_RSA_WITH_AES_256_GCM_SHA384 */
-	//				case 61: fallthrough /* TLS_RSA_WITH_AES_256_CBC_SHA256 */
-	//				case 53: fallthrough /* TLS_RSA_WITH_AES_256_CBC_SHA */
-	//				case 132: fallthrough /* TLS_RSA_WITH_CAMELLIA_256_CBC_SHA */
-	//				case 156: fallthrough /* TLS_RSA_WITH_AES_128_GCM_SHA256 */
-	//				case 60: fallthrough /* TLS_RSA_WITH_AES_128_CBC_SHA256 */
-	//				case 47: fallthrough /* TLS_RSA_WITH_AES_128_CBC_SHA */
-	//				case 65: fallthrough /* TLS_RSA_WITH_CAMELLIA_128_CBC_SHA */
-	//				case 49170: fallthrough /* TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA */
-	//				case 22: fallthrough /* TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA */
-	//				case 10: fallthrough /* TLS_RSA_WITH_3DES_EDE_CBC_SHA */
-	//				case 150: fallthrough /* TLS_RSA_WITH_SEED_CBC_SHA */
-	//				case 7: Security = 1 /* TLS_RSA_WITH_IDEA_CBC_SHA */
-	//				default:     Security = 0
-	//				}
 }
 
 func GeoIpSearch(ip, dbPath string) {
@@ -128,7 +114,7 @@ func GeoIpSearch(ip, dbPath string) {
 	parsedIp := net.ParseIP(ip)
 	record, err := db.Country(parsedIp)
 	if err != nil {
-		log.Println(err)
+		logger.Println(err)
 	}
 
 	if record.Country.IsoCode != "" {
@@ -148,14 +134,14 @@ func (p *Peng) PortScanningHandler(port uint16, incomingPck bool) {
 func addPortToBitmap(port uint16, pBitmap *portbitmap.PortBitmap) {
 	err := pBitmap.AddPort(port)
 	if err != nil {
-		log.Println(err.Error())
+		logger.Println(err.Error())
 	}
 }
 
 func getMyIp() {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		log.Fatal(err.Error())
+		logger.Fatal(err.Error())
 	}
 
 	for _, a := range addrs {

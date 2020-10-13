@@ -7,7 +7,6 @@ import (
 	"github.com/google/gopacket"
 	_ "github.com/google/gopacket/layers" //Used to init internal struct
 	"github.com/google/gopacket/pcap"
-	"log"
 	"os"
 	"stanislav/pkg/portbitmap"
 	"time"
@@ -36,6 +35,7 @@ type Config struct {
 	Ja3BlackListFile   string
 	GeoIpDb            string
 	OfflinePcap        string
+	IpBlackListFile    string
 }
 
 var ja3BlackList map[string]string
@@ -73,11 +73,10 @@ func (p *Peng) run() {
 	}
 
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	defer pHandle.Close()
 
-	//go func() {
 	packet := gopacket.NewPacketSource(pHandle, pHandle.LinkType())
 
 	time.AfterFunc(p.Config.TimeFrame, p.handler)
@@ -87,17 +86,6 @@ func (p *Peng) run() {
 		}
 		p.inspect(packet)
 	}
-	//}()
-
-	/*
-		sig := make(chan os.Signal, 1024)
-		signal.Notify(sig, os.Interrupt)
-		<-sig
-		log.Println("Quitting Peng, bye!")
-
-		for k, v := range topCountryVisit {
-			fmt.Printf("[%s] %d visit.\n", k, v)
-		}*/
 }
 
 func (p *Peng) shutdown() {
@@ -106,7 +94,7 @@ func (p *Peng) shutdown() {
 	time.Sleep(1 * time.Second)
 
 	//TODO
-	fmt.Println("\nTOP COUNTRY VISIT")
+	logger.Println("\n\nTOP COUNTRY VISIT")
 	threatJson, _ := json.Marshal(topCountryVisit)
 	fmt.Println(string(threatJson))
 }
@@ -116,7 +104,7 @@ func (p *Peng) LoadBlackListJa3InMemory() {
 	defer file.Close()
 
 	if err != nil {
-		log.Println(err)
+		logger.Println(err)
 		return
 	}
 
@@ -141,21 +129,21 @@ func (p *Peng) PrintAllInfo() {
 	allPortTraffic := []*portbitmap.PortBitmap{p.ClientTraffic, p.ServerTraffic}
 	for i, v := range allPortTraffic {
 		if p.Config.Verbose == 3 {
-			fmt.Println(v) //Print all bitmap
-			fmt.Println("Bit set: ")
+			logger.Println(v) //Print all bitmap
+			logger.Println("Bit set: ")
 			for i := 0; i < len(v.InnerBitmap); i++ {
-				fmt.Println("bin number [", i, "]    num (bit at 1): ", v.InnerBitmap[i].GetBitSets())
+				logger.Println("bin number [", i, "]    num (bit at 1): ", v.InnerBitmap[i].GetBitSets())
 			}
 		}
 		if p.Config.Verbose >= 1 {
 			if i == 0 {
-				fmt.Printf("[%s] [CLIENT] ", time.Now().Local().String())
+				logger.Printf("[CLIENT] ")
 			} else {
-				fmt.Printf("[%s] [SERVER] ", time.Now().Local().String())
+				logger.Printf("[SERVER] ")
 			}
 		}
 		if p.Config.Verbose >= 2 {
-			fmt.Printf("entropy of each bin: %f\n", v.EntropyOfEachBin())
+			logger.Printf("entropy of each bin: %f\n", v.EntropyOfEachBin())
 		}
 
 		totalEntroy := v.EntropyTotal()
@@ -163,7 +151,7 @@ func (p *Peng) PrintAllInfo() {
 			AddPossibleThreat("general", fmt.Sprintf("probably a port scan. Total entropy: %.2f", totalEntroy))
 		}
 		if p.Config.Verbose >= 1 {
-			fmt.Printf("total entropy: %f\n", totalEntroy)
+			logger.Printf("total entropy: %f\n", totalEntroy)
 		}
 	}
 }

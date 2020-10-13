@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	influxdb2 "github.com/influxdata/influxdb-client-go"
-	"log"
 	"os"
 	"time"
 )
@@ -34,7 +33,7 @@ func (p *Peng) PushToInfluxDb() {
 	writeApi.Flush() // Force all unwritten data to be sent
 
 	if p.Config.Verbose == 3 {
-		fmt.Printf("[%s] file successfully pushed to influxdb\n", time.Now().Local().String())
+		logger.Printf("[%s] file successfully pushed to influxdb\n", time.Now().Local().String())
 	}
 }
 
@@ -46,7 +45,7 @@ func (p *Peng) ExportToCsv() {
 	// 1. Open the file
 	file, err := os.OpenFile(p.Config.SaveFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
 	if err != nil {
-		log.Println("error opening csv file", err.Error())
+		logger.Println("error opening csv file", err.Error())
 	}
 
 	defer file.Close()
@@ -59,15 +58,15 @@ func (p *Peng) ExportToCsv() {
 	// 3. Write all the records
 	err = writer.WriteAll(csvData) // returns error
 	if err != nil {
-		log.Println("error on writing csv data ", err.Error())
+		logger.Println("error on writing csv data ", err.Error())
 		return
 	}
 	err = file.Chown(65534, 65534)
 	if err != nil {
-		fmt.Println(err.Error())
+		logger.Println(err.Error())
 	}
 
 	if p.Config.Verbose == 3 {
-		fmt.Printf("[%s] data successfully exported to csv\n", time.Now().Local().String())
+		logger.Printf("[%s] data successfully exported to csv\n", time.Now().Local().String())
 	}
 }

@@ -15,7 +15,7 @@ import (
 
 var (
 	config = stanislav.Config{
-		NumberOfBin:        128,
+		NumberOfBin:        16,
 		SizeBitmap:         1024,
 		InfluxUrl:          "http://localhost",
 		InfluxPort:         9999,
@@ -45,7 +45,7 @@ func init() {
 	flag.IntVar(&stanislav.NTwToCompare, "nCompare", 3, "number o time windows to compare to evaluate a possible periodicity")
 	flag.StringVar(&stanislav.IpAddrNF, "ip", "", "ip of netflow collector")
 	flag.StringVar(&stanislav.PortNF, "port", "2055", "port of netflow collector")
-	flag.IntVar(&stanislav.Verbose, "verbose", 0, "verbosity level. (1=low,2=medium,3=high")
+	flag.UintVar(&config.Verbose, "verbose", 0, "verbosity level. (1=low,2=medium,3=high")
 
 	//Bitmap
 	flag.UintVar(&config.NumberOfBin, "bin", 16, "number of bin in your bitmap")
@@ -67,6 +67,7 @@ func init() {
 	flag.StringVar(&config.Ja3BlackListFile, "ja3", "", "file path of malicious ja3 fingerprints")
 	flag.StringVar(&config.GeoIpDb, "geoip", "", "file path of geoip db")
 	flag.StringVar(&config.OfflinePcap, "pcap", "", "pcap file to read")
+	flag.StringVar(&config.IpBlackListFile,"c2","", "file path of malicious ip")
 }
 
 func flagConfig() {

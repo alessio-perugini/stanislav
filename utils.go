@@ -2,6 +2,7 @@ package stanislav
 
 import (
 	"encoding/binary"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -84,12 +85,6 @@ func lastAddr(n *net.IPNet) (net.IP, error) { // works when the n is a prefix, o
 	return ip, nil
 }
 
-func DEBUG(v RawFlow, ip, tempo string) {
-	if v.Ipv4DstAddr == ip {
-		fmt.Printf("%v ", tempo)
-	}
-}
-
 func ConvFloatToDuration(v float64) time.Duration {
 	xTime, err := time.ParseDuration(fmt.Sprint(v, "s"))
 	if err != nil {
@@ -113,8 +108,45 @@ func WriteObjToJSONFile(fname string, obj interface{}) {
 
 func AddPossibleThreat(ip, reason string) {
 	if reasons, ok := PossibleThreat[ip]; ok {
+		for _,v := range reasons {//avoid duplicate reasons
+			if v == reason {
+				return
+			}
+		}
 		reasons = append(reasons, reason)
+		PossibleThreat[ip] = reasons
 	} else {
 		PossibleThreat[ip] = []string{reason}
+	}
+}
+
+func LoadBlockListedC2(){
+	if Conf.IpBlackListFile == "" {
+		logger.Println("c2 block list not selected")
+		return
+	}
+
+	file, err := os.OpenFile(Conf.IpBlackListFile, os.O_RDONLY, 0777)
+	defer file.Close()
+
+	if err != nil {
+		logger.Println(err)
+		return
+	}
+
+	r := csv.NewReader(file)
+	r.Comment = '#'
+
+	for {
+		csvField, err := r.Read()
+		if err != nil {
+			break
+		}
+
+		//Parse csv fields
+		ip := csvField[1] //ip
+		name := csvField[4] //malware name
+
+		blackListIp[ip] = name
 	}
 }

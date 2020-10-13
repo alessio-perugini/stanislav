@@ -16,14 +16,16 @@ type proto interface {
 var PossibleThreat = make(map[string][]string)
 
 func LiveMode() {
-	var (
-		wg       sync.WaitGroup
-		signalCh = make(chan os.Signal, 1)
-	)
+	var wg sync.WaitGroup
+	var signalCh = make(chan os.Signal, 1)
+
 	opts = GetOptions()
 	runtime.GOMAXPROCS(opts.getCPU())
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
 	logger = opts.Logger
+
+	//BlacklistModule
+	LoadBlockListedC2()
 
 	netflow9 := NewNetflowV9()
 	peng := New(Conf)
