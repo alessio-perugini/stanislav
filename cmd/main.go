@@ -41,11 +41,11 @@ var (
 func init() {
 	//NetFlow
 	flag.StringVar(&stanislav.FlowPath, "flowPath", "", "dir path to load flows of nProbe")
-	flag.Float64Var(&stanislav.Tolerance, "tolerance", 10, "maximum % tolerance before flag possible periodic flow.")
-	flag.IntVar(&stanislav.NTwToCompare, "nCompare", 3, "number o time windows to compare to evaluate a possible periodicity")
+	flag.Float64Var(&stanislav.Tolerance, "tolerance", 20, "maximum % tolerance before flag possible periodic flow.")
+	flag.IntVar(&stanislav.NTwToCompare, "nCompare", 1, "number o time windows to compare to evaluate a possible periodicity")
 	flag.StringVar(&stanislav.IpAddrNF, "ip", "", "ip of netflow collector")
 	flag.StringVar(&stanislav.PortNF, "port", "2055", "port of netflow collector")
-	flag.UintVar(&config.Verbose, "verbose", 0, "verbosity level. (1=low,2=medium,3=high")
+	flag.UintVar(&config.Verbose, "verbose", 0, "verbosity level. (1=low,2=medium,3=high)")
 
 	//Bitmap
 	flag.UintVar(&config.NumberOfBin, "bin", 16, "number of bin in your bitmap")
@@ -61,7 +61,7 @@ func init() {
 	//other
 	flag.BoolVar(&versionFlag, "version", false, "output version")
 	flag.StringVar(&config.SaveFilePath, "export", "", "file path to save the peng result as csv")
-	flag.StringVar(&timeFrame, "timeFrame", "15s", "interval time to detect scans. Number + (s = seconds, m = minutes, h = hours)")
+	flag.StringVar(&timeFrame, "timeFrame", "15s", "interval time to detect port scans. Number + (s = seconds, m = minutes, h = hours)")
 	flag.StringVar(&config.NetworkInterface, "network", "", "name of your network interface")
 	flag.BoolVar(&showInterfaceNames, "interfaces", false, "show the list of all your network interfaces")
 	flag.StringVar(&config.Ja3BlackListFile, "ja3", "", "file path of malicious ja3 fingerprints")
@@ -71,8 +71,7 @@ func init() {
 }
 
 func flagConfig() {
-	appString := fmt.Sprintf("________                     \n___  __ \\__________________ _\n__  /_/ /  _ \\_  __ \\_  __ `/\n_  ____//  __/  / / /  /_/ / \n/_/     \\___//_/ /_/_\\__, /  \n                    /____/   \n"+
-		"version %s %s", version, commit)
+	appString := fmt.Sprintf("version %s %s", version, commit)
 
 	flag.Usage = func() { //help flag
 		fmt.Fprintf(flag.CommandLine.Output(), "\n\nUsage: flow-periodicity [options]\n")

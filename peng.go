@@ -146,12 +146,13 @@ func (p *Peng) PrintAllInfo() {
 			logger.Printf("entropy of each bin: %f\n", v.EntropyOfEachBin())
 		}
 
-		totalEntroy := v.EntropyTotal()
-		if totalEntroy >= 0.5 {
-			AddPossibleThreat("general", fmt.Sprintf("probably a port scan. Total entropy: %.2f", totalEntroy))
+		totalEntropy := v.EntropyTotal()
+		if totalEntropy >= 0.5 {
+			AddPossibleThreat("general", fmt.Sprintf("probably a port scan. Total entropy: %.2f", totalEntropy))
+			logger.Printf("possible port scan. Total entropy: %.2f", totalEntropy)
 		}
 		if p.Config.Verbose >= 1 {
-			logger.Printf("total entropy: %f\n", totalEntroy)
+			logger.Printf("total entropy: %f\n", totalEntropy)
 		}
 	}
 }
