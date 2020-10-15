@@ -95,13 +95,13 @@ func ConvFloatToDuration(v float64) time.Duration {
 }
 
 func WriteObjToJSONFile(fname string, obj interface{}) {
-	if _, err := os.Stat("./dump"); os.IsNotExist(err) {
-		os.Mkdir("./dump", os.ModePerm)
-	}
-
-	file, _ := os.OpenFile("./dump/"+fname, os.O_CREATE|os.O_RDWR, os.ModePerm)
+	file, err := os.OpenFile(fname, os.O_CREATE|os.O_RDWR, os.ModePerm)
 	defer file.Close()
 
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	encoder := json.NewEncoder(file)
 	encoder.Encode(obj)
 }

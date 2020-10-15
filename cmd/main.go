@@ -67,7 +67,7 @@ func init() {
 	flag.StringVar(&config.Ja3BlackListFile, "ja3", "", "file path of malicious ja3 fingerprints")
 	flag.StringVar(&config.GeoIpDb, "geoip", "", "file path of geoip db")
 	flag.StringVar(&config.OfflinePcap, "pcap", "", "pcap file to read")
-	flag.StringVar(&config.IpBlackListFile,"c2","", "file path of malicious ip")
+	flag.StringVar(&config.IpBlackListFile, "c2", "", "file path of malicious ip")
 }
 
 func flagConfig() {
@@ -153,7 +153,14 @@ func main() {
 	ThreatStats()
 	FlowStats()
 
-	stanislav.WriteObjToJSONFile(time.Now().Format(time.RFC3339)+"_report.json", stanislav.PeriodiFlows) //TODO change this like peng that every X sec dump
+	currTime := time.Now().Format(time.RFC3339)
+	dumpPath := "./dump/" + currTime
+	if _, err := os.Stat(dumpPath); os.IsNotExist(err) {
+		os.Mkdir(dumpPath, os.ModePerm)
+	}
+
+	stanislav.WriteObjToJSONFile(dumpPath+"/periodicity_report.json", stanislav.PeriodiFlows) //TODO change this like peng that every X sec dump
+	stanislav.WriteObjToJSONFile(dumpPath+"/threat_report.json", stanislav.PossibleThreat)
 }
 
 func ThreatStats() {
