@@ -1,6 +1,7 @@
 package stanislav
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"runtime"
@@ -50,4 +51,17 @@ func LiveMode() {
 	}
 
 	wg.Wait()
+
+	//gathering all possible new periodicity, because we don't update on every entry
+
+	for k, v := range PeriodiFlows {
+		if val, ok := PossibleThreat[k]; ok {
+			last := len(val) - 1
+			lastPeriodic := fmt.Sprintf("periodic frequency: %.2fs seen %d times.", v.TWDuration, v.PeriodicityCounter)
+			if val[last] != lastPeriodic {
+				PossibleThreat[k][last] = lastPeriodic
+			}
+		}
+	}
+
 }

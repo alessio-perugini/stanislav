@@ -154,6 +154,9 @@ func main() {
 
 	currTime := time.Now().Format(time.RFC3339)
 	dumpPath := "./dump/" + currTime
+	if _, err := os.Stat("./dump"); os.IsNotExist(err) {
+		os.Mkdir("./dump", os.ModePerm)
+	}
 	if _, err := os.Stat(dumpPath); os.IsNotExist(err) {
 		os.Mkdir(dumpPath, os.ModePerm)
 	}
