@@ -73,21 +73,21 @@ func InspectFlow(rf RawFlow) {
 	}
 	//TODO create a function that handles C2 server blocklist
 	if name, ok := blackListIp[rf.Ipv4DstAddr]; ok {
-		AddPossibleThreat(rf.Ipv4DstAddr, "c2 server " + name)
+		AddPossibleThreat(rf.Ipv4DstAddr, "c2 server "+name)
 		logger.Printf("[%s] appears in the blocked c2 list as %s!\n", rf.Ipv4DstAddr, name)
 	}
 
 	if name, ok := blackListIp[rf.Ipv4SrcAddr]; ok {
-		AddPossibleThreat(rf.Ipv4SrcAddr, "c2 server " + name)
+		AddPossibleThreat(rf.Ipv4SrcAddr, "c2 server "+name)
 		logger.Printf("[%s] appears in the blocked c2 list as %s!\n", rf.Ipv4SrcAddr, name)
 	}
 
 	//https://tools.ietf.org/html/rfc5102#section-5
-	if rf.EndReason == 2 {
+	if rf.EndReason == 2 { //TODO check and remove if in the map
 		return
 	}
 	//https://tools.ietf.org/html/rfc5103
-	if rf.BiFlowDirection == 2 {
+	if rf.BiFlowDirection == 2 { //TODO check and remove if in the map
 		return
 	}
 
@@ -105,15 +105,15 @@ func InspectFlow(rf RawFlow) {
 				flowInfo.LastSwitched = rf.LastSwitched
 			} else { //TW expired
 				if minTime.Before(rf.FirstSwitched) && maxTime.After(rf.FirstSwitched) {
-					SetTwDuration(flowInfo, rf)
+					SetTwDuration(flowInfo, rf) //TODO spostare in fondo all'if e mettere dentro il controllo dell'endreason
 					flowInfo.PeriodicityCounter++
 					flowInfo.LastSwitched = rf.LastSwitched
-					if flowInfo.PeriodicityCounter >= NTwToCompare {
+					if flowInfo.PeriodicityCounter >= SeenXtime {
 						PeriodiFlows[key] = flowInfo
 						ChangePeriodicStatus(key, flowInfo, true)
 					}
 				} else {
-					if flowInfo.PeriodicityCounter >= NTwToCompare {
+					if flowInfo.PeriodicityCounter >= SeenXtime {
 						ChangePeriodicStatus(key, flowInfo, false)
 						ResetCurrentTW(key, flowInfo, rf.LastSwitched)
 					}

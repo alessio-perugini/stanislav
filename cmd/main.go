@@ -42,7 +42,7 @@ func init() {
 	//NetFlow
 	flag.StringVar(&stanislav.FlowPath, "flowPath", "", "dir path to load flows of nProbe")
 	flag.Float64Var(&stanislav.Tolerance, "tolerance", 20, "maximum % tolerance before flag possible periodic flow.")
-	flag.IntVar(&stanislav.NTwToCompare, "nCompare", 1, "number o time windows to compare to evaluate a possible periodicity")
+	flag.IntVar(&stanislav.SeenXtime, "nCompare", 1, "number o time windows to compare to evaluate a possible periodicity")
 	flag.StringVar(&stanislav.IpAddrNF, "ip", "", "ip of netflow collector")
 	flag.StringVar(&stanislav.PortNF, "port", "2055", "port of netflow collector")
 	flag.UintVar(&config.Verbose, "verbose", 0, "verbosity level. (1=low,2=medium,3=high)")

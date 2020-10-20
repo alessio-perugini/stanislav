@@ -13,7 +13,7 @@ var (
 	IpAddrNF            = ""
 	PortNF              = "2055"
 	Tolerance           = 10.0 //10%
-	NTwToCompare        = 3
+	SeenXtime           = 3
 	FlowPath            = "/tmp/2020" //./flows
 	analisi             = AllFlows{}
 	PeriodiFlows        = PeriodicFlows{}
