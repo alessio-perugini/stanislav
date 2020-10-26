@@ -1,12 +1,14 @@
 package stanislav
 
 import (
+	"fmt"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	_ "github.com/google/gopacket/layers" //Used to init internal struct
 	"github.com/oschwald/geoip2-golang"
 	"log"
 	"net"
+	"stanislav/pkg/dga"
 	"stanislav/pkg/ja3"
 	"stanislav/pkg/portbitmap"
 	"stanislav/pkg/tlsx"
@@ -24,6 +26,17 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 		fmt.Println(nl)
 	}*/
 
+	if dnsLayer := packet.Layer(layers.LayerTypeDNS); dnsLayer != nil {
+		if v, ok := dnsLayer.(*layers.DNS); ok {
+			for _, question := range v.Questions {
+				name := string(question.Name)
+				dgaScore := dga.LmsScoreOfDomain(name)
+				if dgaScore <= 42.0 { //TODO set global variable
+					AddPossibleThreat(name, fmt.Sprintf("possible dga found with lms score of: %.2f", dgaScore))
+				}
+			}
+		}
+	}
 	if ipv4Layer = packet.Layer(layers.LayerTypeIPv4); ipv4Layer == nil {
 		return
 	}

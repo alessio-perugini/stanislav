@@ -229,6 +229,8 @@ LOOP:
 							continue
 						}
 						rawFlow.BiFlowDirection = uint(direction)
+					case 57677: //DNS query
+						fmt.Println()
 					}
 				} /*
 					if srcMask > 0 && dstMask > 0 {
