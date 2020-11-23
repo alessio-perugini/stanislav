@@ -262,11 +262,15 @@ func (m *ServerHelloBasic) Unmarshal(data []byte) error {
 	// handshake header. The length of the ServerHello is taken from the
 	// handshake header.
 	serverHelloLen := int(data[6])<<16 | int(data[7])<<8 | int(data[8])
-
+	var err error
 	if serverHelloLen >= len(data) {
 		return errors.New("invalid serverHelloLen")
 	}
-
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("memory fail")
+		}
+	}()
 	data = data[5 : 9+serverHelloLen]
 
 	*m = ServerHelloBasic{}
@@ -301,7 +305,7 @@ func (m *ServerHelloBasic) Unmarshal(data []byte) error {
 		m.Extensions = append(m.Extensions, extension)
 	}
 
-	return nil
+	return err
 }
 
 func (ch ServerHelloBasic) String() string {

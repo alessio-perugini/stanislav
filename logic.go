@@ -18,8 +18,8 @@ func (f *PeriodicFlows) Marshal() ([]byte, error) {
 }
 
 type PeriodicFlows map[string]*FlowInfo
-
 type AllFlows map[string]*FlowInfo
+
 
 type FlowInfo struct {
 	TWDuration           float64       `json:"frequency"`
@@ -28,18 +28,9 @@ type FlowInfo struct {
 	PeriodicityCounter   int           `json:"num_periodic_loops_accounted"`
 	Server               string        `json:"server"`
 	TimeWindowsExpiresAt time.Time     `json:"-"`
-	TimeWindows          []TimeWindow  `json:"-"`
 	LastSwitched         time.Time     `json:"-"`
 	CurrentlyPeriodic    bool          `json:"-"`
 	Deviation            time.Duration `json:"-"`
-}
-
-type TimeWindow struct {
-	Duration        time.Duration
-	LastFlowTime    time.Time
-	TotalJitter     float64
-	NumberSeenFlows int
-	Jitter          float64
 }
 
 type RawFlow struct {
@@ -72,11 +63,11 @@ func InspectFlow(rf RawFlow) {
 		return
 	}
 	//TODO create a function that handles C2 server blocklist
+
 	if name, ok := blackListIp[rf.Ipv4DstAddr]; ok {
 		AddPossibleThreat(rf.Ipv4DstAddr, "c2 server "+name)
 		logger.Printf("[%s] appears in the blocked c2 list as %s!\n", rf.Ipv4DstAddr, name)
 	}
-
 	if name, ok := blackListIp[rf.Ipv4SrcAddr]; ok {
 		AddPossibleThreat(rf.Ipv4SrcAddr, "c2 server "+name)
 		logger.Printf("[%s] appears in the blocked c2 list as %s!\n", rf.Ipv4SrcAddr, name)
@@ -131,7 +122,6 @@ func InspectFlow(rf RawFlow) {
 }
 
 func ResetCurrentTW(key string, fi *FlowInfo, lastSwitched time.Time) {
-	fi.TimeWindows = fi.TimeWindows[:0] //clear last X TW
 	fi.LastSwitched = lastSwitched
 	fi.TimeWindowsExpiresAt = time.Time{} //Resetting TW
 	analisi[key] = fi
@@ -143,7 +133,7 @@ func ChangePeriodicStatus(key string, fi *FlowInfo, v bool) {
 	}
 
 	if v && !fi.CurrentlyPeriodic {
-		AddPossibleThreat(key, fmt.Sprintf("periodic frequency: %.2fs seen %d times.", fi.TWDuration, fi.PeriodicityCounter))
+		//AddPossibleThreat(key, fmt.Sprintf("periodic frequency: %.2fs seen %d times.", fi.TWDuration, fi.PeriodicityCounter))
 		logger.Printf("%s \tbecame periodic! Seen %d times. Frequency: %.2fs ", key, fi.PeriodicityCounter, fi.TWDuration)
 	} else {
 		logger.Printf("%s \tnot periodic anymore! Seen %d times. Frequency: %.2fs ", key, fi.PeriodicityCounter, fi.TWDuration)

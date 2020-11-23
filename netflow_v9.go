@@ -231,12 +231,13 @@ LOOP:
 						rawFlow.BiFlowDirection = uint(direction)
 					case 57677: //DNS query
 						fmt.Println()
+					case 57981:
+						fmt.Println()
 					}
 				} /*
 					if srcMask > 0 && dstMask > 0 {
 						fmt.Println(srcMask, " ", dstMask)
 					}*/
-
 				InspectFlow(rawFlow)
 			}
 		}

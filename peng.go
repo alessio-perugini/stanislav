@@ -80,6 +80,8 @@ func (p *Peng) run() {
 	packet := gopacket.NewPacketSource(pHandle, pHandle.LinkType())
 
 	timer := time.AfterFunc(p.Config.TimeFrame, p.handler)
+
+	start := time.Now()
 	for packet := range packet.Packets() {
 		if p.stop { //TODO forse passare il puntatore di peng
 			timer.Stop()
@@ -87,6 +89,7 @@ func (p *Peng) run() {
 		}
 		p.inspect(packet)
 	}
+	fmt.Println("Durata: ", time.Now().Sub(start).Seconds())
 }
 
 func (p *Peng) shutdown() {

@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"stanislav"
+	"strings"
 	"time"
 )
 
@@ -141,28 +142,17 @@ func main() {
 
 	if stanislav.FlowPath != "" {
 		stanislav.OfflineMode()
-		FlowStats()
-		stanislav.WriteObjToJSONFile(time.Now().Format(time.RFC3339)+"_report.json", stanislav.PeriodiFlows)
-		return
+	} else {
+		stanislav.Conf = &config //TODO handle nil
+		stanislav.LiveMode()
 	}
 
-	stanislav.Conf = &config //TODO handle nil
-	stanislav.LiveMode()
+	gatherCaptureEndingPeriodicity() //Used to fill last possible periodic counter
 
 	ThreatStats()
 	FlowStats()
 
-	currTime := time.Now().Format(time.RFC3339)
-	dumpPath := "./dump/" + currTime
-	if _, err := os.Stat("./dump"); os.IsNotExist(err) {
-		os.Mkdir("./dump", os.ModePerm)
-	}
-	if _, err := os.Stat(dumpPath); os.IsNotExist(err) {
-		os.Mkdir(dumpPath, os.ModePerm)
-	}
-
-	stanislav.WriteObjToJSONFile(dumpPath+"/periodicity_report.json", stanislav.PeriodiFlows) //TODO change this like peng that every X sec dump
-	stanislav.WriteObjToJSONFile(dumpPath+"/threat_report.json", stanislav.PossibleThreat)
+	dumpToFile()
 }
 
 func ThreatStats() {
@@ -178,4 +168,53 @@ func FlowStats() {
 		return
 	}
 	fmt.Printf("%s", string(json))
+}
+
+func commonFlows() []string{
+	//matching threat in coming with periodic stuff
+	var commonThreat []string
+	commonThreat = make([]string, 0, 100)
+	for k,v  := range stanislav.PeriodiFlows {
+		k2 := strings.Split(k,"/")
+		k3 := k2[0] + "/"+k2[1]
+		if _, ok := stanislav.PossibleThreat[k3]; ok {
+			commonThreat = append(commonThreat, k3)
+		} else if _, ok := stanislav.PossibleThreat[k2[1]+"/"+k2[0]]; ok {
+			commonThreat = append(commonThreat, k3)
+		} else {
+			if v.PeriodicityCounter > 1 {
+				commonThreat = append(commonThreat, k3)
+			}
+		}
+	}
+
+	return commonThreat
+}
+
+func gatherCaptureEndingPeriodicity(){
+	//gathering all possible new periodicity, because we don't update on every entry
+	for k, v := range stanislav.PeriodiFlows {
+		if val, ok := stanislav.PossibleThreat[k]; ok {
+			last := len(val) - 1
+			lastPeriodic := fmt.Sprintf("periodic frequency: %.2fs seen %d times.", v.TWDuration, v.PeriodicityCounter)
+			if val[last] != lastPeriodic {
+				stanislav.PossibleThreat[k][last] = lastPeriodic
+			}
+		}
+	}
+}
+
+func dumpToFile(){
+	currTime := time.Now().Format(time.RFC3339)
+	dumpPath := "./dump/" + currTime
+	if _, err := os.Stat("./dump"); os.IsNotExist(err) {
+		os.Mkdir("./dump", os.ModePerm)
+	}
+	if _, err := os.Stat(dumpPath); os.IsNotExist(err) {
+		os.Mkdir(dumpPath, os.ModePerm)
+	}
+
+	stanislav.WriteObjToJSONFile(dumpPath+"/periodicity_report.json", stanislav.PeriodiFlows) //TODO change this like peng that every X sec dump
+	stanislav.WriteObjToJSONFile(dumpPath+"/threat_report.json", stanislav.PossibleThreat)
+	stanislav.WriteObjToJSONFile(dumpPath+"/highly_threat.json", commonFlows())
 }

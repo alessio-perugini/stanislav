@@ -1,14 +1,12 @@
 package stanislav
 
 import (
-	"fmt"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	_ "github.com/google/gopacket/layers" //Used to init internal struct
 	"github.com/oschwald/geoip2-golang"
 	"log"
 	"net"
-	"stanislav/pkg/dga"
 	"stanislav/pkg/ja3"
 	"stanislav/pkg/portbitmap"
 	"stanislav/pkg/tlsx"
@@ -25,18 +23,21 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 	/*	if nl := packet.NetworkLayer(); nl != nil {
 		fmt.Println(nl)
 	}*/
-
+/*
 	if dnsLayer := packet.Layer(layers.LayerTypeDNS); dnsLayer != nil {
 		if v, ok := dnsLayer.(*layers.DNS); ok {
 			for _, question := range v.Questions {
 				name := string(question.Name)
 				dgaScore := dga.LmsScoreOfDomain(name)
 				if dgaScore <= 42.0 { //TODO set global variable
+					if p.Config.Verbose > 0 {
+						logger.Printf("%s possible dga found with lms score of: %.2f", name, dgaScore)
+					}
 					AddPossibleThreat(name, fmt.Sprintf("possible dga found with lms score of: %.2f", dgaScore))
 				}
 			}
 		}
-	}
+	}*/
 	if ipv4Layer = packet.Layer(layers.LayerTypeIPv4); ipv4Layer == nil {
 		return
 	}
@@ -85,10 +86,16 @@ func (p *Peng) inspect(packet gopacket.Packet) {
 				clientHello = ja3.GetJa3HelloFromPayload(tcp.LayerPayload())
 				serverHello = ja3.GetJa3sHelloFromPayload(tcp.LayerPayload())
 			}
+			/* //TODO read if is plain ip or not
+			if len(tcp.Payload) != 0 {
+				reader := bufio.NewReader(bytes.NewReader(tcp.Payload))
+				httpReq, err := http.ReadRequest(reader)
+
+			}*/
 		}
 	}
 
-	GeoIpSearch(externalIp, p.Config.GeoIpDb)
+	//GeoIpSearch(externalIp, p.Config.GeoIpDb) //TODO optimize leaving db open
 
 	//BLACKLISTED c2 Server
 	if name, ok := blackListIp[externalIp]; ok {
