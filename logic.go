@@ -20,7 +20,6 @@ func (f *PeriodicFlows) Marshal() ([]byte, error) {
 type PeriodicFlows map[string]*FlowInfo
 type AllFlows map[string]*FlowInfo
 
-
 type FlowInfo struct {
 	TWDuration           float64       `json:"frequency"`
 	ServerPort           uint16        `json:"server_port"`
@@ -57,10 +56,11 @@ func SetTwDuration(fi *FlowInfo, rf RawFlow) {
 	fi.LastSwitched = rf.LastSwitched
 }
 
-func InspectFlow(rf RawFlow) {
+//TODO remove bool return, used for analysis only
+func InspectFlow(rf RawFlow) bool {
 	if !(rf.Ipv4DstAddr != "" && rf.Ipv4SrcAddr != "0.0.0.0" && rf.Ipv4DstAddr != "0.0.0.0" &&
 		!ExcludeMultiAndBroadcast(rf.Ipv4SrcAddr) && !ExcludeMultiAndBroadcast(rf.Ipv4DstAddr)) {
-		return
+		return false
 	}
 	//TODO create a function that handles C2 server blocklist
 
@@ -75,15 +75,14 @@ func InspectFlow(rf RawFlow) {
 
 	//https://tools.ietf.org/html/rfc5102#section-5
 	if rf.EndReason == 2 { //TODO check and remove if in the map
-		return
+		return false
 	}
 	//https://tools.ietf.org/html/rfc5103
 	if rf.BiFlowDirection == 2 { //TODO check and remove if in the map
-		return
+		return false
 	}
 
-	var key string
-	key = fmt.Sprintf("%s/%s/%d", rf.Ipv4SrcAddr, rf.Ipv4DstAddr, rf.PortDst)
+	key := fmt.Sprintf("%s/%s/%d", rf.Ipv4SrcAddr, rf.Ipv4DstAddr, rf.PortDst)
 
 	if flowInfo, flowSeen := analisi[key]; flowSeen {
 		if flowInfo.TimeWindowsExpiresAt.IsZero() { //compute new TimeWindow
@@ -102,6 +101,7 @@ func InspectFlow(rf RawFlow) {
 					if flowInfo.PeriodicityCounter >= SeenXtime {
 						PeriodiFlows[key] = flowInfo
 						ChangePeriodicStatus(key, flowInfo, true)
+						return true
 					}
 				} else {
 					if flowInfo.PeriodicityCounter >= SeenXtime {
@@ -119,6 +119,8 @@ func InspectFlow(rf RawFlow) {
 			LastSwitched: rf.LastSwitched,
 		}
 	}
+
+	return false
 }
 
 func ResetCurrentTW(key string, fi *FlowInfo, lastSwitched time.Time) {
@@ -132,11 +134,15 @@ func ChangePeriodicStatus(key string, fi *FlowInfo, v bool) {
 		return
 	}
 
-	if v && !fi.CurrentlyPeriodic {
+	if v && !fi.CurrentlyPeriodic { //TODO re-enable for live mode!
 		//AddPossibleThreat(key, fmt.Sprintf("periodic frequency: %.2fs seen %d times.", fi.TWDuration, fi.PeriodicityCounter))
-		logger.Printf("%s \tbecame periodic! Seen %d times. Frequency: %.2fs ", key, fi.PeriodicityCounter, fi.TWDuration)
+		if Conf.Verbose > 0 {
+			logger.Printf("%s \tbecame periodic! Seen %d times. Frequency: %.2fs ", key, fi.PeriodicityCounter, fi.TWDuration)
+		}
 	} else {
-		logger.Printf("%s \tnot periodic anymore! Seen %d times. Frequency: %.2fs ", key, fi.PeriodicityCounter, fi.TWDuration)
+		if Conf.Verbose > 0 {
+			logger.Printf("%s \tnot periodic anymore! Seen %d times. Frequency: %.2fs ", key, fi.PeriodicityCounter, fi.TWDuration)
+		}
 	}
 
 	fi.CurrentlyPeriodic = v

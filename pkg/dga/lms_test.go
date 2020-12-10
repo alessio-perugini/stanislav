@@ -15,7 +15,7 @@ func TestLmsScore(t *testing.T) {
 		args args
 		want float64
 	}{
-		// TODO: Add test cases.
+		// TODO: Add stanislav-dataset cases.
 		{
 			name: "test1",
 			args: args{subject: "/quDJa5xQ8bf9um/nKl3/rRPiY6OpgXFX/Ns2bkVRfNXr0/MRh2tGEOHDpyEnsgKE/"},
@@ -30,4 +30,3 @@ func TestLmsScore(t *testing.T) {
 		})
 	}
 }
-
