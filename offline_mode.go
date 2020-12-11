@@ -22,6 +22,15 @@ func OfflineMode() {
 	ReadFlowFiles(dirs, InspectFlow)
 }
 
+func CleanInternalData() {
+	AnalysisCsvFlow = make(map[string][][]string)
+	PeriodicCsvFLows = make(map[string][][]string)
+	ChronologicalOrderCsvFlows = make(map[string][][]string)
+	analisi = make(AllFlows)
+	PeriodiFlows = make(PeriodicFlows)
+	PossibleThreat = make(map[string][]string)
+}
+
 func ReadFlowFiles(dirs []string, inspect func(v RawFlow) bool) {
 	for _, fPath := range dirs {
 		file, err := os.OpenFile(fPath, os.O_RDONLY, 0777)

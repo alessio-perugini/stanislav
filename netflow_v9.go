@@ -115,9 +115,9 @@ func (i *NetflowV9) shutdown() {
 	logger.Println("stopping netflow v9 service gracefully ...")
 	time.Sleep(1 * time.Second)
 
-	// dump the templates to storage
+	// dump_dataset the templates to storage
 	if err := mCacheNF9.Dump(opts.NetflowV9TplCacheFile); err != nil {
-		logger.Println("couldn't not dump template", err)
+		logger.Println("couldn't not dump_dataset template", err)
 	}
 
 	// logging and close UDP channel

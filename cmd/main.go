@@ -2,7 +2,6 @@ package main
 
 //TODO add support for ipv6, netflow5 and IPFX
 import (
-	"encoding/csv"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -10,9 +9,7 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"sort"
 	"stanislav"
-	"strings"
 	"time"
 )
 
@@ -143,9 +140,6 @@ func main() {
 	flagConfig()
 
 	stanislav.Conf = &config
-	run2()
-	datasetFlowAnalysis()
-	return
 
 	if stanislav.FlowPath != "" {
 		stanislav.OfflineMode()
@@ -155,7 +149,6 @@ func main() {
 
 	gatherCaptureEndingPeriodicity() //Used to fill last possible periodic counter
 	dumpToFile()
-	datasetFlowAnalysis()
 }
 
 func ThreatStats() {
@@ -171,27 +164,6 @@ func FlowStats() {
 		return
 	}
 	fmt.Printf("%s", string(stats))
-}
-
-func commonFlows(seenAtLeastX int) []string {
-	//matching threat in coming with periodic stuff
-	var commonThreat []string
-	commonThreat = make([]string, 0, 100)
-	for k, v := range stanislav.PeriodiFlows {
-		k2 := strings.Split(k, "/")
-		k3 := k2[0] + "/" + k2[1]
-		if _, ok := stanislav.PossibleThreat[k3]; ok {
-			commonThreat = append(commonThreat, k3)
-		} else if _, ok := stanislav.PossibleThreat[k2[1]+"/"+k2[0]]; ok {
-			commonThreat = append(commonThreat, k3)
-		} else {
-			if v.PeriodicityCounter >= seenAtLeastX {
-				commonThreat = append(commonThreat, k3)
-			}
-		}
-	}
-
-	return commonThreat
 }
 
 func gatherCaptureEndingPeriodicity() {
@@ -222,211 +194,6 @@ func dumpToFile() {
 		os.Mkdir(dumpPath, os.ModePerm)
 	}
 
-	stanislav.WriteObjToJSONFile(dumpPath+"/periodicity_report.json", stanislav.PeriodiFlows) //TODO change this like peng that every X sec dump
+	stanislav.WriteObjToJSONFile(dumpPath+"/periodicity_report.json", stanislav.PeriodiFlows) //TODO change this like peng that every X sec dump_dataset
 	stanislav.WriteObjToJSONFile(dumpPath+"/threat_report.json", stanislav.PossibleThreat)
-	stanislav.WriteObjToJSONFile(dumpPath+"/highly_threat.json", commonFlows(1))
-	dumpCsvPeriodicRecord(dumpPath + "/periodic.csv")
-	dumpCsvNotPeriodicRecord(dumpPath + "/not_periodic.csv")
-	dumpPeriodicFlowKey(dumpPath + "/periodic_keys.json")
-	dumpAllKeyFlow(dumpPath + "/allFlows.json")
-}
-
-type analysis struct {
-	PeriodicTolerance float64
-	MaliciousIpFound  int
-	MaliciousIpTotal  int
-	Precision         float64
-	Recall            float64
-	Accuracy          float64
-	TotalIpFound      int
-	FalseNegatives    int
-	FalsePositives    int
-	TrueNegatives     int
-	TruePositives     int
-}
-
-func datasetFlowAnalysis() {
-	//analyze only periodic flows
-	fmt.Println("minPeriodicity,tolerance,badip,precision,recall,accuracy,totalIp")
-
-	for i := 0; i <= 4; i++ { //end of tn (true negative)
-		for j := 6; j <= 10; j++ { //end of fn (false negative)
-			a := periodicityFlowAnalysis(i, 5, j) //tn, fp, fn
-			if a.TotalIpFound != 0 {
-				fmt.Printf("[tn:%d,fn:%d] ", i, j)
-				fmt.Printf("tp: %d | tn: %d | fp: %d | fn: %d | precision: %.2f | recall: %.2f | accuracy: %.2f\n",
-					a.FalsePositives, a.TrueNegatives, a.FalsePositives, a.FalseNegatives, a.Precision, a.Recall, a.Accuracy)
-			}
-		}
-	}
-}
-
-func (a analysis) Stats(msg string) {
-	//fmt.Println(msg)
-	fmt.Printf("tolerance: %.2f | bad ip: %d/%d | precision: %.2f | recall: %.2f | accuracy: %.2f\n", a.PeriodicTolerance, a.MaliciousIpFound, a.MaliciousIpTotal, a.Precision, a.Recall, a.Accuracy)
-	//fmt.Printf("%.2f,%d/%d,%.2f,%.2f,%.2f,%d", a.PeriodicTolerance, a.MaliciousIpFound, a.MaliciousIpTotal, a.Precision, a.Recall, a.Accuracy, a.TotalIpFound)
-}
-
-//TODO move to specific script, this functions are used to create te dataset
-func dumpCsvPeriodicRecord(fname string) {
-	file, err := os.OpenFile(fname, os.O_CREATE|os.O_RDWR, os.ModePerm)
-	defer file.Close()
-
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	w := csv.NewWriter(file)
-	w.Comma = '|'
-
-	//Make chronological order
-	keys := make([]string, 0, len(stanislav.ChronologicalOrderCsvFlows))
-	for k := range stanislav.ChronologicalOrderCsvFlows {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	cronoFlows := make([][]string, 0, len(keys))
-	for _, k := range keys {
-		for _, v := range stanislav.ChronologicalOrderCsvFlows[k] {
-			cronoFlows = append(cronoFlows, v)
-		}
-	}
-
-	err = w.WriteAll(cronoFlows)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func dumpCsvNotPeriodicRecord(fname string) {
-	file, err := os.OpenFile(fname, os.O_CREATE|os.O_RDWR, os.ModePerm)
-	defer file.Close()
-
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	w := csv.NewWriter(file)
-	w.Comma = '|'
-
-	targetNumber := 100
-	cronoFlows := make([][]string, 0, targetNumber)
-
-	for k, v := range stanislav.AnalysisCsvFlow {
-		if _, ok := stanislav.PeriodicCsvFLows[k]; !ok {
-			if targetNumber-len(v) >= 0 {
-				cronoFlows = append(cronoFlows, v...)
-				targetNumber -= len(v)
-			}
-		}
-		if targetNumber == 0 {
-			break
-		}
-	}
-
-	err = w.WriteAll(cronoFlows)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func dumpPeriodicFlowKey(fname string) {
-	//Make chronological order
-	keys := make([]string, 0, len(stanislav.PeriodiFlows))
-	for k := range stanislav.PeriodiFlows {
-		keys = append(keys, k)
-	}
-
-	stanislav.WriteObjToJSONFile(fname, keys)
-}
-
-func dumpAllKeyFlow(fname string) {
-	keys := make([]string, 0, len(stanislav.AnalysisCsvFlow))
-	for k := range stanislav.AnalysisCsvFlow {
-		keys = append(keys, k)
-	}
-
-	stanislav.WriteObjToJSONFile(fname, keys)
-}
-
-func periodicityFlowAnalysis(tn, fp, fn int) analysis {
-	trueNegative, truePositive := 0, 0
-	falsePositive, falseNegative := 0, 0
-
-	for _, v := range flowSeen {
-		if v <= tn { //2
-			trueNegative++
-		} else if v <= fp { //5
-			falsePositive++
-		} else if v >= 6 && v <= fn {
-			falseNegative++
-		} else {
-			truePositive++
-		}
-	}
-
-	precision := float64(truePositive) / (float64(truePositive) + float64(falsePositive))
-	recall := float64(truePositive) / (float64(truePositive) + float64(falseNegative))
-
-	return analysis{
-		Precision:      precision,
-		Recall:         recall,
-		Accuracy:       (precision + recall) / 2,
-		TotalIpFound:   len(flowSeen),
-		TruePositives:  truePositive,
-		TrueNegatives:  trueNegative,
-		FalseNegatives: falseNegative,
-		FalsePositives: falsePositive,
-	}
-}
-
-var (
-	flowSeen = make(map[string]int)
-)
-
-func run2() {
-	path := "/media/ale/DatiD/Progetti/Progetti2019/GoPrj/stanislav/internals/dump"
-	dirs := stanislav.WalkAllDirs(path)
-	calculateFlowSeen(dirs)
-}
-
-func calculateFlowSeen(folderPath []string) {
-	f, e := os.OpenFile("/media/ale/DatiD/Progetti/Progetti2019/GoPrj/stanislav/internals/allFlows.json", os.O_RDONLY, 0777)
-	if e != nil {
-		log.Fatal(e)
-	}
-
-	var keys []string
-	r := json.NewDecoder(f)
-	if err := r.Decode(&keys); err != nil {
-		log.Fatal(err)
-	}
-
-	for _, key := range keys {
-		flowSeen[key] = 0
-	}
-
-	for _, fpath := range folderPath {
-		file, err := os.OpenFile(fpath, os.O_RDONLY, 0777)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		var keys []string
-		r := json.NewDecoder(file)
-		if err := r.Decode(&keys); err != nil {
-			log.Fatal(err)
-		}
-
-		for _, key := range keys {
-			if _, ok := flowSeen[key]; ok {
-				flowSeen[key]++
-			} else {
-				flowSeen[key] = 1
-			}
-		}
-	}
 }
